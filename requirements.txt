@@ -1,0 +1,12 @@
+pandas
+fastapi
+nltk
+clean-text
+natasha
+scikit-learn
+rank_bm25
+torch
+sentence-transformers
+transformers
+optimum
+optimum[onnxruntime]
