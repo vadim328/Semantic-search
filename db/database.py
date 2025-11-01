@@ -19,7 +19,7 @@ class RelationalDatabaseTouch:
         self.first_fetch_query = load_query('queries/fetch_all_requests.sql')
         self.last_day_query = load_query('queries/fetch_requests_last.sql')
         self.last_fetch_time = str(datetime.now().date())
-        self.requests = None
+        self.requests = {}
 
     def fetch_requests(self, first_fetch=False):
         """Получение данных из БД"""
@@ -31,7 +31,8 @@ class RelationalDatabaseTouch:
 
         try:
             session = self.Session()
-            self.requests = session.execute(query, params)
+            requests = session.execute(query, params)
+            self.requests = requests.mappings().all() # Преобразуем в словарь
             session.close()
             print("Данные получены")
             self.last_fetch_time = str(datetime.now().date())
@@ -41,7 +42,7 @@ class RelationalDatabaseTouch:
     def get_requests(self):
         """Отдает запросы и очищает кэш"""
         requests = self.requests
-        self.requests = None
+        self.requests = {}
         return requests
 
 
@@ -61,19 +62,18 @@ class VectorDatabaseTouch:
             vectors_config=VectorParams(size=self.vector_size, distance=self.distance),
         )
 
-    def save_embeddings(self, embeddings, texts, bm25_tokens, registry_date):
+    def save_embeddings(self, embeddings, numbers, texts, registry_date):
         # Формируем записи для Qdrant
         points = [
             PointStruct(
-                id=i,
+                id=int(numbers[i]),
                 vector=embeddings[i],
                 payload={
                     "text": texts[i],
-                    "bm25_token": bm25_tokens[i],
                     "registry_date": registry_date[i]
                 }
             )
-            for i in range(len(texts))
+            for i in range(len(numbers))
         ]
 
         # Сохраняем в Qdrant

@@ -54,7 +54,7 @@ transforms_bert = TT.TextCompose([
 ])
 
 
-def preparation_text(texts: list[str]) -> tuple[list[list[str]], list[str]]:
+def preparation_list(texts: list[str]) -> tuple[list[list[str]], list[str]]:
     """Подготавливает тексты для BM25 и BERT-моделей.
 
     Args:
@@ -65,6 +65,22 @@ def preparation_text(texts: list[str]) -> tuple[list[list[str]], list[str]]:
         - первый — тексты, подготовленные для BM25;
         - второй — тексты, подготовленные для BERT.
     """
-    texts_bm25 = [transforms_bm25(text=text)["text"].split() for text in texts]
+    tokens_bm25 = [transforms_bm25(text=text)["text"].split() for text in texts]
     texts_bert = [transforms_bert(text=text)["text"] for text in texts]
-    return texts_bm25, texts_bert
+    return tokens_bm25, texts_bert
+
+
+def preparation_str(text: str) -> tuple[list[str], str]:
+    """Подготавливает тексты для BM25 и BERT-моделей.
+
+    Args:
+        text: Список исходных текстов.
+
+    Returns:
+        Кортеж из двух списков строк:
+        - первый — тексты, подготовленные для BM25;
+        - второй — тексты, подготовленные для BERT.
+    """
+    tokens_bm25 = transforms_bm25(text=text)["text"].split()
+    text_bert = transforms_bert(text=text)["text"]
+    return tokens_bm25, text_bert

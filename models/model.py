@@ -13,6 +13,8 @@ class OnnxSentenseTransformer:
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
     def encode(self, texts, batch_size=8, normalize=True):
+        if isinstance(texts, str):
+            texts = [texts]
         all_embeddings = []
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i+batch_size]
