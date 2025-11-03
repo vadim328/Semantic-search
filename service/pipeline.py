@@ -57,11 +57,13 @@ class SemanticSearchEngine:
 
     async def update(self, first_fetch=False):
         """Получение данных и сохранение их в БД"""
+
         self.relational_db.fetch_data(first_fetch)
         rows = self.relational_db.get_requests()
 
         for row in rows:
-            row['embedding'] = transforms_bert(text=row['problem'])["text"]
+            text_bert = transforms_bert(text=row['problem'])["text"]
+            row['embedding'] = self.model.encode(text_bert)[0]
 
         self.vector_db.save_embeddings(rows)
 
