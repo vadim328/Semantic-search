@@ -1,4 +1,6 @@
 import numpy as np
+import asyncio
+from datetime import datetime, timedelta
 from models.model import OnnxSentenseTransformer
 from db.database import RelationalDatabaseTouch, VectorDatabaseTouch
 from rank_bm25 import BM25Okapi
@@ -16,7 +18,7 @@ class SemanticSearchEngine:
         )
         self.vector_db = VectorDatabaseTouch("http://localhost:6333")
 
-    def search(self, query: str, alpha=0.5):
+    def search(self, query: str, limit=5, alpha=0.5):
 
         tokenized_query = transforms_bm25(text=query)["text"].split()
         query_bert = transforms_bert(text=query)["text"]
@@ -44,10 +46,47 @@ class SemanticSearchEngine:
         cosine_norm = cosine_scores / (cosine_scores.max() + 1e-9)
         hybrid_scores = alpha * bm25_norm + (1 - alpha) * cosine_norm
 
+        """
+        TODO
+        вернуть N-ое количество
+        """
         # --- Ранжируем ---
-        ranked = sorted(zip(numbers, hybrid_scores), key=lambda x: x[1])
+        ranked = sorted(zip(numbers, hybrid_scores), key=lambda x: x[1])[:limit]
 
         return ranked
+
+    async def update(self, first_fetch=False):
+        """Получение данных и сохранение их в БД"""
+        self.relational_db.fetch_data(first_fetch)
+        rows = self.relational_db.get_requests()
+
+        for row in rows:
+            row['embedding'] = transforms_bert(text=row['problem'])["text"]
+
+        self.vector_db.save_embeddings(rows)
+
+    async def background_updater(self):
+        """Фоновая задача для обновления данных
+           Засыпает  до 3 часов ночи каждого дня
+           По истечении таймера запсукает функцию на получение данных
+        """
+        try:
+            while True:
+                now = datetime.now()
+                # Цель — 3:00 следующего дня
+                target_time = (now + timedelta(days=1)).replace(hour=3, minute=0, second=0, microsecond=0)
+                wait_seconds = (target_time - now).total_seconds()
+                print(f'Waiting until {target_time} {int(wait_seconds)} sec.')
+                await asyncio.sleep(wait_seconds)
+                try:
+                    await self.update()
+                except Exception as e:
+                    print(f'Error during update: {e}')
+        except asyncio.CancelledError:
+            print("Background updater was cancelled.")
+            raise
+
+
 
 
 

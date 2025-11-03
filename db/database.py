@@ -21,7 +21,7 @@ class RelationalDatabaseTouch:
         self.last_fetch_time = str(datetime.now().date())
         self.requests = {}
 
-    def fetch_requests(self, first_fetch=False):
+    def fetch_data(self, first_fetch):
         """Получение данных из БД"""
         if first_fetch:
             query = text(self.first_fetch_query)
@@ -32,7 +32,7 @@ class RelationalDatabaseTouch:
         try:
             session = self.Session()
             requests = session.execute(query, params)
-            self.requests = requests.mappings().all() # Преобразуем в словарь
+            self.requests = requests.mappings().all()  # Преобразуем в словарь
             session.close()
             print("Данные получены")
             self.last_fetch_time = str(datetime.now().date())
@@ -55,6 +55,13 @@ class VectorDatabaseTouch:
         self.distance = Distance.COSINE  # метрика
         self.points_count = 0
 
+        # Проверяем, существует ли коллекция
+        exists = self.client.collection_exists(self.collection_name)
+
+        if not exists:
+            self.init_db()
+            print(f"Коллекция '{self.collection_name}' не найдена, создана новая коллекция")
+
     def init_db(self):
         # Создаём коллекцию
         self.client.create_collection(
@@ -62,18 +69,18 @@ class VectorDatabaseTouch:
             vectors_config=VectorParams(size=self.vector_size, distance=self.distance),
         )
 
-    def save_embeddings(self, embeddings, numbers, texts, registry_date):
+    def save_embeddings(self, rows: dict):
         # Формируем записи для Qdrant
         points = [
             PointStruct(
-                id=int(numbers[i]),
-                vector=embeddings[i],
+                id=int(row['number']),
+                vector=row['embedding'],
                 payload={
-                    "text": texts[i],
-                    "registry_date": registry_date[i]
+                    "text": row['problem'],
+                    "registry_date": row['registry_date']
                 }
             )
-            for i in range(len(numbers))
+            for row in rows
         ]
 
         # Сохраняем в Qdrant
