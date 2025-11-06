@@ -10,29 +10,33 @@ from text_processing.text_preparation import transforms_bm25, transforms_bert
 class SemanticSearchEngine:
     def __init__(self):
         self.model = OnnxSentenseTransformer(
-            'models/onnx/',
+            'models/onnx/optim/',
             'model_optimized.onnx'
         )
+
         self.relational_db = RelationalDatabaseTouch(
             "REMOVED"
         )
-        self.vector_db = VectorDatabaseTouch("http://localhost:6333")
+
+        # self.vector_db = VectorDatabaseTouch("http://localhost:6333")
+        self.vector_db = VectorDatabaseTouch(":memory:")
 
     def search(self, query: str, limit=5, alpha=0.5):
 
+        # Для поиска по ключевым словам лучше увеличить альфу
         tokenized_query = transforms_bm25(text=query)["text"].split()
         query_bert = transforms_bert(text=query)["text"]
+        print(query_bert)
 
         embedding = self.model.encode(query_bert)[0]
         hits = self.vector_db.fetch_embeddings(embedding)
 
         cosine_scores, tokenized_querys = [], []
         numbers = []
-
-        for hit in hits:
+        for hit in hits.points:
             numbers.append(hit.id)
             cosine_scores.append(hit.score)
-            tokens = transforms_bm25(text=hit.payload.text)["text"].split()
+            tokens = transforms_bm25(text=hit.payload["text"])["text"].split()
             tokenized_querys.append(tokens)
 
         cosine_scores = np.array(cosine_scores)  # преобразуем в numpy массив для дальнейших рассчетов
@@ -45,21 +49,25 @@ class SemanticSearchEngine:
         bm25_norm = bm25_scores / (bm25_scores.max() + 1e-9)
         cosine_norm = cosine_scores / (cosine_scores.max() + 1e-9)
         hybrid_scores = alpha * bm25_norm + (1 - alpha) * cosine_norm
-
         """
         TODO
         вернуть N-ое количество
         """
         # --- Ранжируем ---
-        ranked = sorted(zip(numbers, hybrid_scores), key=lambda x: x[1])[:limit]
+        ranked = sorted(zip(numbers, hybrid_scores), key=lambda x: x[1], reverse=True)[:limit]
 
         return ranked
 
-    async def update(self, first_fetch=False):
+    def update(self, first_fetch=False):
         """Получение данных и сохранение их в БД"""
 
-        self.relational_db.fetch_data(first_fetch)
-        rows = self.relational_db.get_requests()
+        date_last_record = self.vector_db.get_date_last_record()
+        if date_last_record is None:
+            first_fetch = True
+            date_last_record = str(datetime.now().date())
+        first_fetch = False
+        self.relational_db.fetch_data(first_fetch, date_last_record)
+        rows = self.relational_db.get_data()
 
         for row in rows:
             text_bert = transforms_bert(text=row['problem'])["text"]
@@ -87,11 +95,3 @@ class SemanticSearchEngine:
         except asyncio.CancelledError:
             print("Background updater was cancelled.")
             raise
-
-
-
-
-
-
-
-

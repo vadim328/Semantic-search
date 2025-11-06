@@ -1,4 +1,6 @@
 .idea
 requests.csv
 test.py
-text_processing/__pycache__*
+*__pycache__*
+*.zip
+/models/onnx/*
