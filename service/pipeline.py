@@ -5,6 +5,9 @@ from models.model import OnnxSentenseTransformer
 from db.database import RelationalDatabaseTouch, VectorDatabaseTouch
 from rank_bm25 import BM25Okapi
 from text_processing.text_preparation import transforms_bm25, transforms_bert
+import logging
+
+log = logging.getLogger(__name__)
 
 
 class SemanticSearchEngine:
@@ -15,18 +18,36 @@ class SemanticSearchEngine:
         )
 
         self.relational_db = RelationalDatabaseTouch(
-            "REMOVED"
+            "[CHANGE]"
         )
 
         # self.vector_db = VectorDatabaseTouch("http://localhost:6333")
         self.vector_db = VectorDatabaseTouch(":memory:")
 
     def search(self, query: str, limit=5, alpha=0.5):
+        """
+            Поиск информации по векторной БД и
+            рассчет косинусного расстояния в совокупности
+            с рассчетом значения BM25
+
+            :input:
+                str: Искомый текст
+                int: Количество лучших совпадений
+                float: Определяет баланс между значением косинусного расстояния и
+                        алгоритма BM25
+
+            :output:
+                tuple(list, list): кортеж с двумя списками, score и № запроса
+        """
+
+        log.info(f'Request params: query - {query},\nlimit - {limit},\nalpha - {alpha}')
 
         # Для поиска по ключевым словам лучше увеличить альфу
         tokenized_query = transforms_bm25(text=query)["text"].split()
+        log.debug(f'transforms text for bm25: {tokenized_query}')
+
         query_bert = transforms_bert(text=query)["text"]
-        print(query_bert)
+        log.debug(f'transforms text for NN: {query_bert}')
 
         embedding = self.model.encode(query_bert)[0]
         hits = self.vector_db.fetch_embeddings(embedding)
@@ -55,12 +76,18 @@ class SemanticSearchEngine:
         """
         # --- Ранжируем ---
         ranked = sorted(zip(numbers, hybrid_scores), key=lambda x: x[1], reverse=True)[:limit]
+        log.info(f'Result fetching')
 
         return ranked
 
     def update(self, first_fetch=False):
-        """Получение данных и сохранение их в БД"""
+        """
+            Получение новых данных и сохранение их в векторную БД
+            :input:
+                bool: Определяет первичное или вторичное получение данных
+        """
 
+        log.info("Request for data ...")
         date_last_record = self.vector_db.get_date_last_record()
         if date_last_record is None:
             first_fetch = True
@@ -70,8 +97,8 @@ class SemanticSearchEngine:
         rows = self.relational_db.get_data()
 
         for row in rows:
-            text_bert = transforms_bert(text=row['problem'])["text"]
-            row['embedding'] = self.model.encode(text_bert)[0]
+            text_bert = transforms_bert(text=row["problem"])["text"]
+            row["embedding"] = self.model.encode(text_bert)[0]
 
         self.vector_db.save_embeddings(rows)
 
@@ -86,12 +113,12 @@ class SemanticSearchEngine:
                 # Цель — 3:00 следующего дня
                 target_time = (now + timedelta(days=1)).replace(hour=3, minute=0, second=0, microsecond=0)
                 wait_seconds = (target_time - now).total_seconds()
-                print(f'Waiting until {target_time} {int(wait_seconds)} sec.')
+                log.info(f'Waiting until {target_time} {int(wait_seconds)} sec.')
                 await asyncio.sleep(wait_seconds)
                 try:
                     await self.update()
                 except Exception as e:
-                    print(f'Error during update: {e}')
+                    log.info(f'Error during update: {e}')
         except asyncio.CancelledError:
-            print("Background updater was cancelled.")
+            log.info("Background updater was cancelled.")
             raise

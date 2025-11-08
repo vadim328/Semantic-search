@@ -1,10 +1,14 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, PointStruct, Distance
 from qdrant_client.http.models import Filter, FieldCondition, Range
+import numpy as np
+import logging
+
+log = logging.getLogger(__name__)
 
 
 # Загружаем SQL из файла
@@ -22,7 +26,13 @@ class RelationalDatabaseTouch:
         self.requests = {}
 
     def fetch_data(self, first_fetch: bool, last_fetch_time: str):
-        """Получение данных из БД"""
+        """
+            Получение данных из БД, сохраняет в переменную
+            :input:
+                bool: Определяет первичную загрузку или вторичную
+                str: Дата последней записи в векторной БД
+                    или дата последнего успешного созранения
+        """
         if first_fetch:
             query = text(self.first_fetch_query)
         else:
@@ -34,12 +44,16 @@ class RelationalDatabaseTouch:
             requests = session.execute(query, params)
             self.requests = [dict(row) for row in requests.mappings().all()]  # Преобразуем в словарь
             session.close()
-            print("Данные получены")
+            log.info(f"Data received from relational db, count rows - {len(self.requests)}")
         except Exception as e:
-            print(f"Ошибка получения данных")
+            log.info(f"Error retrieving data from relational db, {e}")
 
     def get_data(self):
-        """Отдает запросы и очищает кэш"""
+        """
+            Отдает запросы и очищает кэш
+            :output:
+                dict: Запросы полученные из БД
+        """
         requests = self.requests
         self.requests = {}
         return requests
@@ -55,62 +69,86 @@ class VectorDatabaseTouch:
 
         # Проверяем, существует ли коллекция
         if not self.client.collection_exists(self.collection_name):
+            log.info(f"Collection '{self.collection_name}' not found")
             self.init_db()
             self.points_count = 0
             self.date_last_record = None
-            print(f"Коллекция '{self.collection_name}' не найдена, создана новая коллекция")
         else:
-            self.points_count = self._get_existing_points_count()
+            self.points_count = self._fetch_existing_points_count()
             self.date_last_record = self._fetch_date_last_record()
-            print(f"Коллекция '{self.collection_name}' найдена, записей: {self.points_count}")
+            log.info(f"Collection '{self.collection_name}' found, "
+                     f"count points - {self.points_count}, date last point - {self.date_last_record}")
 
     def init_db(self):
-        # Создаём коллекцию
+        """Создание новой коллекции"""
+
+        log.info(f"create new collection, collection name - {self.collection_name}")
         self.client.create_collection(
             collection_name=self.collection_name,
             vectors_config=VectorParams(size=self.vector_size, distance=self.distance),
         )
 
     def save_embeddings(self, rows: dict):
-        # Формируем записи для Qdrant
-        points = [
-            PointStruct(
-                id=int(row["number"]),
-                vector=row["embedding"],
-                payload={
-                    "text": row["problem"],
-                    "registry_date": row["registry_date"]
-                }
-            )
-            for row in rows
-        ]
+        """
+            Формируем записи для Qdrant и сохраняем
+            :input:
+                dict: Словарь с данными из реляционной БД
+        """
+        log.info("Save data in vector db ...")
+        try:
+            points = [
+                PointStruct(
+                    id=int(row["number"]),
+                    vector=row["embedding"],
+                    payload={
+                        "text": row["problem"],
+                        "registry_date": row["registry_date"]
+                    }
+                )
+                for row in rows
+            ]
 
-        # Сохраняем в Qdrant
-        self.client.upsert(
-            collection_name=self.collection_name,
-            points=points
-        )
-        self.points_count = self.points_count + len(rows)  # Актуализируем количество точек
-        self.date_last_record = str(datetime.now().date())  # Актуализируем дату последнего сохранения
-        print(f"✅ Эмбеддинги успешно сохранены в Qdrant. Дата последней записи {self.date_last_record}")
+            # Сохраняем в Qdrant
+            self.client.upsert(
+                collection_name=self.collection_name,
+                points=points
+            )
+            self.points_count = self.points_count + len(rows)  # Актуализируем количество точек
+            self.date_last_record = str(datetime.now().date())  # Актуализируем дату последнего сохранения
+            log.info(f"✅ Embedding successfully saved in vector db. Date last points {self.date_last_record}")
+        except Exception as e:
+            log.info(f"Embedding unsuccessfully saved in vector db. Date last points {self.date_last_record}")
 
     def fetch_embeddings(self, embedding):
-        # Получаем все эмбеддинги из Qdrant
+        """
+            Получаем все эмбеддинги из Qdrant
+            :input:
+                dict: Данные из СУЗ
+        """
+        log.info("Fetch all embedding from vector db ...")
         hits = self.client.query_points(
             collection_name=self.collection_name,
             query=embedding,
             limit=self.points_count # Находим все
         )
-        print("✅ Эмбеддинги получены")
+        log.info("✅ Embedding received successfully")
         return hits
 
-    def _get_existing_points_count(self):
-        # Получаем количество записей и сохраняем в переменную, для оптимизации
+    def _fetch_existing_points_count(self):
+        """
+            Получение количества точек в коллекции
+            :output:
+                int: Количество точек в коллекции
+        """
         info = self.client.get_collection(collection_name=self.collection_name)
         return info.result.points_count or 0 # актуальное количество точек
 
     def _fetch_date_last_record(self):
-        """Возвращаем дату последней записи в коллекции"""
+        """
+            Получение даты последней точки в коллекции
+            :output:
+                str: Дата в формате YY-mm-dd
+        """
         # Получаем все записи коллекции
         scroll_result = self.client.scroll(
             collection_name=self.collection_name,
@@ -131,6 +169,11 @@ class VectorDatabaseTouch:
         return last_date
 
     def get_date_last_record(self):
+        """
+            Получение даты последней записи из переменной
+            :output:
+                str: дата последней записи в переменной
+        """
         return self.date_last_record
 
 
