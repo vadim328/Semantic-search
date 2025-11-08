@@ -1,11 +1,10 @@
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from datetime import datetime
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, PointStruct, Distance
 from qdrant_client.http.models import Filter, FieldCondition, Range
-import numpy as np
 import logging
 
 log = logging.getLogger(__name__)
@@ -19,13 +18,13 @@ def load_query(path: str) -> str:
 
 class RelationalDatabaseTouch:
     def __init__(self, url):
-        engine = create_engine(url)
-        self.Session = sessionmaker(bind=engine)
+        engine = create_async_engine(url)
+        self.Session = async_sessionmaker(bind=engine)
         self.first_fetch_query = load_query("db/queries/fetch_all_requests.sql")
         self.next_fetch_query = load_query("db/queries/fetch_requests_last.sql")
         self.requests = {}
 
-    def fetch_data(self, first_fetch: bool, last_fetch_time: str):
+    async def fetch_data(self, first_fetch: bool, last_fetch_time: str):
         """
             Получение данных из БД, сохраняет в переменную
             :input:
@@ -39,14 +38,13 @@ class RelationalDatabaseTouch:
             query = text(self.next_fetch_query)
         params = {"last_fetch_time": last_fetch_time}
 
-        try:
-            session = self.Session()
-            requests = session.execute(query, params)
-            self.requests = [dict(row) for row in requests.mappings().all()]  # Преобразуем в словарь
-            session.close()
-            log.info(f"Data received from relational db, count rows - {len(self.requests)}")
-        except Exception as e:
-            log.info(f"Error retrieving data from relational db, {e}")
+        async with self.Session() as session:
+            try:
+                requests = await session.execute(query, params)
+                self.requests = [dict(row) for row in requests.mappings().all()]
+                log.info(f"Data received from relational db, count rows - {len(self.requests)}")
+            except Exception as e:
+                log.error(f"Error retrieving data from relational db: {e}")
 
     def get_data(self):
         """
@@ -66,7 +64,20 @@ class VectorDatabaseTouch:
         self.collection_name = "support_tickets"  # Название коллекции
         self.vector_size = 312  # размер эмбеддинга
         self.distance = Distance.COSINE  # метрика
+        self.points_count = 0
+        self.date_last_record = None
+        self.initialize()
 
+    def init_db(self):
+        """Создание новой коллекции"""
+
+        log.info(f"create new collection, collection name - {self.collection_name}")
+        self.client.create_collection(
+            collection_name=self.collection_name,
+            vectors_config=VectorParams(size=self.vector_size, distance=self.distance),
+        )
+
+    def initialize(self):
         # Проверяем, существует ли коллекция
         if not self.client.collection_exists(self.collection_name):
             log.info(f"Collection '{self.collection_name}' not found")
@@ -77,16 +88,8 @@ class VectorDatabaseTouch:
             self.points_count = self._fetch_existing_points_count()
             self.date_last_record = self._fetch_date_last_record()
             log.info(f"Collection '{self.collection_name}' found, "
-                     f"count points - {self.points_count}, date last point - {self.date_last_record}")
-
-    def init_db(self):
-        """Создание новой коллекции"""
-
-        log.info(f"create new collection, collection name - {self.collection_name}")
-        self.client.create_collection(
-            collection_name=self.collection_name,
-            vectors_config=VectorParams(size=self.vector_size, distance=self.distance),
-        )
+                     f"count points - {self.points_count}, "
+                     f"date last point - {self.date_last_record}")
 
     def save_embeddings(self, rows: dict):
         """
@@ -129,7 +132,7 @@ class VectorDatabaseTouch:
         hits = self.client.query_points(
             collection_name=self.collection_name,
             query=embedding,
-            limit=self.points_count # Находим все
+            limit=self.points_count  # Находим все точки
         )
         log.info("✅ Embedding received successfully")
         return hits
@@ -141,7 +144,7 @@ class VectorDatabaseTouch:
                 int: Количество точек в коллекции
         """
         info = self.client.get_collection(collection_name=self.collection_name)
-        return info.result.points_count or 0 # актуальное количество точек
+        return info.result.points_count or 0  # актуальное количество точек
 
     def _fetch_date_last_record(self):
         """

@@ -80,7 +80,7 @@ class SemanticSearchEngine:
 
         return ranked
 
-    def update(self, first_fetch=False):
+    async def update(self, first_fetch=False):
         """
             Получение новых данных и сохранение их в векторную БД
             :input:
@@ -92,20 +92,20 @@ class SemanticSearchEngine:
         if date_last_record is None:
             first_fetch = True
             date_last_record = str(datetime.now().date())
-        first_fetch = False
-        self.relational_db.fetch_data(first_fetch, date_last_record)
+        await self.relational_db.fetch_data(first_fetch, date_last_record)
         rows = self.relational_db.get_data()
 
         for row in rows:
             text_bert = transforms_bert(text=row["problem"])["text"]
             row["embedding"] = self.model.encode(text_bert)[0]
 
-        self.vector_db.save_embeddings(rows)
+        await self.vector_db.save_embeddings(rows)
 
     async def background_updater(self):
-        """Фоновая задача для обновления данных
-           Засыпает  до 3 часов ночи каждого дня
-           По истечении таймера запсукает функцию на получение данных
+        """
+            Фоновая задача для обновления данных
+            Засыпает  до 3 часов ночи каждого дня
+            По истечении таймера запсукает функцию на получение данных
         """
         try:
             while True:
