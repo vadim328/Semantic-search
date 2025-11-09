@@ -24,20 +24,22 @@ class RelationalDatabaseTouch:
         self.next_fetch_query = load_query("db/queries/fetch_requests_last.sql")
         self.requests = {}
 
-    async def fetch_data(self, first_fetch: bool, last_fetch_time: str):
+    async def fetch_data(self, first_fetch: bool, last_fetch_time: datetime):
         """
             Получение данных из БД, сохраняет в переменную
             :input:
                 bool: Определяет первичную загрузку или вторичную
-                str: Дата последней записи в векторной БД
-                    или дата последнего успешного созранения
+                datetime: Дата последней записи в векторной БД
+                    или дата последнего успешного сохранения
         """
         if first_fetch:
             query = text(self.first_fetch_query)
         else:
             query = text(self.next_fetch_query)
         params = {"last_fetch_time": last_fetch_time}
-
+        date_str = '2025-11-07' # test
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date() # test
+        params = {"last_fetch_time": date_obj} # test
         async with self.Session() as session:
             try:
                 requests = await session.execute(query, params)
@@ -126,7 +128,7 @@ class VectorDatabaseTouch:
         """
             Получаем все эмбеддинги из Qdrant
             :input:
-                dict: Данные из СУЗ
+                np.array: Исходный эмбеддинг
         """
         log.info("Fetch all embedding from vector db ...")
         hits = self.client.query_points(
@@ -168,6 +170,7 @@ class VectorDatabaseTouch:
 
         # Извлекаем только дату
         last_date = last_point.payload["registry_date"].split("T")[0]
+        last_date = datetime.strptime(last_date, "%Y-%m-%d").date()
 
         return last_date
 
@@ -175,7 +178,7 @@ class VectorDatabaseTouch:
         """
             Получение даты последней записи из переменной
             :output:
-                str: дата последней записи в переменной
+                datetime: дата последней записи в переменной
         """
         return self.date_last_record
 

@@ -24,11 +24,32 @@ class SemanticSearchEngine:
         # self.vector_db = VectorDatabaseTouch("http://localhost:6333")
         self.vector_db = VectorDatabaseTouch(":memory:")
 
+    def calculation(self, data_calculation: dict):
+        """
+            Рассчет косинусного расстояния в совокупности
+            с рассчетом значения BM25
+            :input:
+                dict: Данные для вычисления
+            :output:
+                tuple(list, list): кортеж с двумя списками, score и № запроса
+        """
+        cosine_scores = np.array(data_calculation["cosine_scores"])  # преобразуем в numpy массив для дальнейших рассчетов
+        bm25 = BM25Okapi(data_calculation["tokenized_querys"])
+
+        # --- Считаем BM25 ---
+        bm25_scores = bm25.get_scores(data_calculation["tokenized_query"])
+
+        # 4. Нормализация и объединение
+        bm25_norm = bm25_scores / (bm25_scores.max() + 1e-9)
+        cosine_norm = cosine_scores / (cosine_scores.max() + 1e-9)
+        hybrid_scores = data_calculation["alpha"] * bm25_norm + (1 - data_calculation["alpha"]) * cosine_norm
+
+        # --- Ранжируем ---
+        return sorted(zip(data_calculation["numbers"], hybrid_scores), key=lambda x: x[1], reverse=True)
+
     def search(self, query: str, limit=5, alpha=0.5):
         """
-            Поиск информации по векторной БД и
-            рассчет косинусного расстояния в совокупности
-            с рассчетом значения BM25
+            Поиск информации по векторной БД
 
             :input:
                 str: Искомый текст
@@ -58,48 +79,42 @@ class SemanticSearchEngine:
             numbers.append(hit.id)
             cosine_scores.append(hit.score)
             tokens = transforms_bm25(text=hit.payload["text"])["text"].split()
+            log.info(f"Text tokens: {tokens}")
             tokenized_querys.append(tokens)
 
-        cosine_scores = np.array(cosine_scores)  # преобразуем в numpy массив для дальнейших рассчетов
-        bm25 = BM25Okapi(tokenized_querys)
-
-        # --- Считаем BM25 ---
-        bm25_scores = bm25.get_scores(tokenized_query)
-
-        # 4. Нормализация и объединение
-        bm25_norm = bm25_scores / (bm25_scores.max() + 1e-9)
-        cosine_norm = cosine_scores / (cosine_scores.max() + 1e-9)
-        hybrid_scores = alpha * bm25_norm + (1 - alpha) * cosine_norm
-        """
-        TODO
-        вернуть N-ое количество
-        """
-        # --- Ранжируем ---
-        ranked = sorted(zip(numbers, hybrid_scores), key=lambda x: x[1], reverse=True)[:limit]
+        ranked = self.calculation(
+            {
+                "cosine_scores": cosine_scores,
+                "tokenized_querys": tokenized_querys,
+                "tokenized_query": tokenized_query,
+                "alpha": alpha,
+                "numbers": numbers,
+            }
+        )
         log.info(f'Result fetching')
 
-        return ranked
+        return ranked[:limit]
 
-    async def update(self, first_fetch=False):
+    async def update(self):
         """
             Получение новых данных и сохранение их в векторную БД
-            :input:
-                bool: Определяет первичное или вторичное получение данных
         """
 
         log.info("Request for data ...")
+        first_fetch = False
         date_last_record = self.vector_db.get_date_last_record()
         if date_last_record is None:
             first_fetch = True
-            date_last_record = str(datetime.now().date())
+            date_last_record = datetime.now().date()
         await self.relational_db.fetch_data(first_fetch, date_last_record)
         rows = self.relational_db.get_data()
 
         for row in rows:
+            log.debug(f"Text for preparation {row['problem']}")
             text_bert = transforms_bert(text=row["problem"])["text"]
             row["embedding"] = self.model.encode(text_bert)[0]
 
-        await self.vector_db.save_embeddings(rows)
+        self.vector_db.save_embeddings(rows)
 
     async def background_updater(self):
         """
