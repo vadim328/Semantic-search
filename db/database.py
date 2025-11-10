@@ -4,7 +4,7 @@ from datetime import datetime
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, PointStruct, Distance
-from qdrant_client.http.models import Filter, FieldCondition, Range
+from qdrant_client.http import models
 import logging
 
 log = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class RelationalDatabaseTouch:
         else:
             query = text(self.next_fetch_query)
         params = {"last_fetch_time": last_fetch_time}
-        date_str = '2025-11-07' # test
+        date_str = '2025-11-10' # test
         date_obj = datetime.strptime(date_str, "%Y-%m-%d").date() # test
         params = {"last_fetch_time": date_obj} # test
         async with self.Session() as session:
@@ -124,17 +124,43 @@ class VectorDatabaseTouch:
         except Exception as e:
             log.info(f"Embedding unsuccessfully saved in vector db. Date last points {self.date_last_record}")
 
-    def fetch_embeddings(self, embedding):
+    def _build_filter(self, filters):
+
+        log.info("Add filters ...")
+        conditions = []
+        if filters.get("date_from"):
+            date_from = datetime.strptime(filters.get("date_from"), "%Y-%m-%d").timestamp()
+            conditions.append(
+                models.FieldCondition(
+                    key="registry_date",
+                    range=models.Range(gte=date_from)
+                )
+            )
+        if filters.get("date_to"):
+            date_to = datetime.strptime(filters.get("date_to"), "%Y-%m-%d").timestamp()
+            conditions.append(
+                models.FieldCondition(
+                    key="registry_date",
+                    range=models.Range(lte=date_to)
+                )
+            )
+        log.info("Filters added")
+        return models.Filter(must=conditions) if conditions else None
+
+    def fetch_embeddings(self, embedding, filters):
         """
             Получаем все эмбеддинги из Qdrant
             :input:
                 np.array: Исходный эмбеддинг
         """
-        log.info("Fetch all embedding from vector db ...")
+        log.info("Fetch embeddings from vector db ...")
+        # Добавляем фильтр
+        query_filter = self._build_filter(filters)
         hits = self.client.query_points(
             collection_name=self.collection_name,
             query=embedding,
-            limit=self.points_count  # Находим все точки
+            limit=self.points_count,  # Находим все точки
+            query_filter=query_filter
         )
         log.info("✅ Embedding received successfully")
         return hits
@@ -169,10 +195,9 @@ class VectorDatabaseTouch:
         )
 
         # Извлекаем только дату
-        last_date = last_point.payload["registry_date"].split("T")[0]
-        last_date = datetime.strptime(last_date, "%Y-%m-%d").date()
+        last_date = last_point.payload["registry_date"]
 
-        return last_date
+        return datetime.fromtimestamp(last_date).date()
 
     def get_date_last_record(self):
         """

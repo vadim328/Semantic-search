@@ -11,6 +11,6 @@ def setup_logging():
     # Проверка, чтобы не добавлять повторно обработчики
     if not logger.handlers:
         handler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+        formatter = logging.Formatter("[%(asctime)s] [%(levelname)s] [%(pathname)s] %(message)s")
         handler.setFormatter(formatter)
         logger.addHandler(handler)

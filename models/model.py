@@ -27,7 +27,6 @@ class OnnxSentenseTransformer:
             :output:
                 list: список полученных эмбеддингов
         """
-        log.info("Start fetching embedding[s] from text[s] ...")
         log.debug(f"Data: {texts}")
         if isinstance(texts, str):
             texts = [texts]
@@ -45,5 +44,4 @@ class OnnxSentenseTransformer:
             if normalize:
                 embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
             all_embeddings.append(embeddings.cpu().numpy())
-        log.info("Embedding[s] is fetching from text[s]")
         return np.vstack(all_embeddings)

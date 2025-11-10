@@ -21,3 +21,5 @@ sqlalchemy
 asyncpg
 
 qdrant-client
+
+uvicorn

@@ -31,7 +31,7 @@ class SemanticSearchEngine:
             :input:
                 dict: Данные для вычисления
             :output:
-                tuple(list, list): кортеж с двумя списками, score и № запроса
+                list[tuple]: кортеж с двумя списками, score и № запроса
         """
         cosine_scores = np.array(data_calculation["cosine_scores"])  # преобразуем в numpy массив для дальнейших рассчетов
         bm25 = BM25Okapi(data_calculation["tokenized_querys"])
@@ -47,7 +47,7 @@ class SemanticSearchEngine:
         # --- Ранжируем ---
         return sorted(zip(data_calculation["numbers"], hybrid_scores), key=lambda x: x[1], reverse=True)
 
-    def search(self, query: str, limit=5, alpha=0.5):
+    def search(self, query: str, limit=5, alpha=0.5, filters=None):
         """
             Поиск информации по векторной БД
 
@@ -58,11 +58,10 @@ class SemanticSearchEngine:
                         алгоритма BM25
 
             :output:
-                tuple(list, list): кортеж с двумя списками, score и № запроса
+                dict: Отсортированный словарь с ИД запроса и значению комбинированного сходства
         """
-
-        log.info(f'Request params: query - {query},\nlimit - {limit},\nalpha - {alpha}')
-
+        if filters is None:
+            filters = {}
         # Для поиска по ключевым словам лучше увеличить альфу
         tokenized_query = transforms_bm25(text=query)["text"].split()
         log.debug(f'transforms text for bm25: {tokenized_query}')
@@ -71,18 +70,20 @@ class SemanticSearchEngine:
         log.debug(f'transforms text for NN: {query_bert}')
 
         embedding = self.model.encode(query_bert)[0]
-        hits = self.vector_db.fetch_embeddings(embedding)
+        hits = self.vector_db.fetch_embeddings(embedding, filters)
 
         cosine_scores, tokenized_querys = [], []
         numbers = []
+        log.info(f"{len(hits.points)}")
         for hit in hits.points:
+            log.info(type(hit.payload["registry_date"]))
             numbers.append(hit.id)
             cosine_scores.append(hit.score)
             tokens = transforms_bm25(text=hit.payload["text"])["text"].split()
-            log.info(f"Text tokens: {tokens}")
+            log.debug(f"Text tokens: {tokens}")
             tokenized_querys.append(tokens)
 
-        ranked = self.calculation(
+        calc = self.calculation(
             {
                 "cosine_scores": cosine_scores,
                 "tokenized_querys": tokenized_querys,
@@ -92,8 +93,12 @@ class SemanticSearchEngine:
             }
         )
         log.info(f'Result fetching')
+        calc = calc[:limit]
+        ranked = {}
+        for i in calc:
+            ranked[str(i[0])] = str(round(i[1] * 100)) + "%"
 
-        return ranked[:limit]
+        return ranked
 
     async def update(self):
         """
@@ -101,20 +106,25 @@ class SemanticSearchEngine:
         """
 
         log.info("Request for data ...")
-        first_fetch = False
         date_last_record = self.vector_db.get_date_last_record()
-        if date_last_record is None:
-            first_fetch = True
-            date_last_record = datetime.now().date()
-        await self.relational_db.fetch_data(first_fetch, date_last_record)
-        rows = self.relational_db.get_data()
+        if date_last_record != datetime.now().date():
+            first_fetch = False
+            if date_last_record is None:
+                first_fetch = True
+                date_last_record = datetime.now().date()
+            first_fetch = False
+            await self.relational_db.fetch_data(first_fetch, date_last_record)
+            rows = self.relational_db.get_data()
 
-        for row in rows:
-            log.debug(f"Text for preparation {row['problem']}")
-            text_bert = transforms_bert(text=row["problem"])["text"]
-            row["embedding"] = self.model.encode(text_bert)[0]
+            for row in rows:
+                log.debug(f"Text for preparation {row['problem']}")
+                text_bert = transforms_bert(text=row["problem"])["text"]
+                row["embedding"] = self.model.encode(text_bert)[0]
+                row["registry_date"] = row["registry_date"].timestamp()
 
-        self.vector_db.save_embeddings(rows)
+            self.vector_db.save_embeddings(rows)
+        else:
+            log.info("Update skip, there is already data for the current date")
 
     async def background_updater(self):
         """
