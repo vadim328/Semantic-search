@@ -107,6 +107,8 @@ class VectorDatabaseTouch:
                     vector=row["embedding"],
                     payload={
                         "text": row["problem"],
+                        "client": row["client"],
+                        "product": row["product"],
                         "registry_date": row["registry_date"]
                     }
                 )
@@ -128,6 +130,20 @@ class VectorDatabaseTouch:
 
         log.info("Add filters ...")
         conditions = []
+        if filters.get("client"):
+            conditions.append(
+                models.FieldCondition(
+                    key="client",
+                    match=models.MatchValue(value=filters.get("client"))
+                )
+            )
+        if filters.get("product"):
+            conditions.append(
+                models.FieldCondition(
+                    key="product",
+                    match=models.MatchValue(value=filters.get("product"))
+                )
+            )
         if filters.get("date_from"):
             date_from = datetime.strptime(filters.get("date_from"), "%Y-%m-%d").timestamp()
             conditions.append(
