@@ -37,7 +37,7 @@ class RelationalDatabaseTouch:
         else:
             query = text(self.next_fetch_query)
         params = {"last_fetch_time": last_fetch_time}
-        date_str = '2025-11-10' # test
+        date_str = '2025-11-13' # test
         date_obj = datetime.strptime(date_str, "%Y-%m-%d").date() # test
         params = {"last_fetch_time": date_obj} # test
         async with self.Session() as session:
@@ -62,11 +62,13 @@ class RelationalDatabaseTouch:
 class VectorDatabaseTouch:
     def __init__(self, url):
         # Подключаемся к Qdrant
-        self.client = QdrantClient(url)
+        self.qdrant_client = QdrantClient(url)
         self.collection_name = "support_tickets"  # Название коллекции
         self.vector_size = 312  # размер эмбеддинга
         self.distance = Distance.COSINE  # метрика
         self.points_count = 0
+        self.clients = []
+        self.products = []
         self.date_last_record = None
         self.initialize()
 
@@ -74,21 +76,19 @@ class VectorDatabaseTouch:
         """Создание новой коллекции"""
 
         log.info(f"create new collection, collection name - {self.collection_name}")
-        self.client.create_collection(
+        self.qdrant_client.create_collection(
             collection_name=self.collection_name,
             vectors_config=VectorParams(size=self.vector_size, distance=self.distance),
         )
 
     def initialize(self):
         # Проверяем, существует ли коллекция
-        if not self.client.collection_exists(self.collection_name):
+        if not self.qdrant_client.collection_exists(self.collection_name):
             log.info(f"Collection '{self.collection_name}' not found")
             self.init_db()
-            self.points_count = 0
-            self.date_last_record = None
         else:
             self.points_count = self._fetch_existing_points_count()
-            self.date_last_record = self._fetch_date_last_record()
+            self._fetch_metadate()
             log.info(f"Collection '{self.collection_name}' found, "
                      f"count points - {self.points_count}, "
                      f"date last point - {self.date_last_record}")
@@ -116,12 +116,12 @@ class VectorDatabaseTouch:
             ]
 
             # Сохраняем в Qdrant
-            self.client.upsert(
+            self.qdrant_client.upsert(
                 collection_name=self.collection_name,
                 points=points
             )
             self.points_count = self.points_count + len(rows)  # Актуализируем количество точек
-            self.date_last_record = str(datetime.now().date())  # Актуализируем дату последнего сохранения
+            self._fetch_metadate()  # Актуализируем метаданные
             log.info(f"✅ Embedding successfully saved in vector db. Date last points {self.date_last_record}")
         except Exception as e:
             log.info(f"Embedding unsuccessfully saved in vector db. Date last points {self.date_last_record}")
@@ -172,7 +172,7 @@ class VectorDatabaseTouch:
         log.info("Fetch embeddings from vector db ...")
         # Добавляем фильтр
         query_filter = self._build_filter(filters)
-        hits = self.client.query_points(
+        hits = self.qdrant_client.query_points(
             collection_name=self.collection_name,
             query=embedding,
             limit=self.points_count,  # Находим все точки
@@ -187,33 +187,51 @@ class VectorDatabaseTouch:
             :output:
                 int: Количество точек в коллекции
         """
-        info = self.client.get_collection(collection_name=self.collection_name)
+        info = self.qdrant_client.get_collection(collection_name=self.collection_name)
         return info.result.points_count or 0  # актуальное количество точек
 
-    def _fetch_date_last_record(self):
+    def _fetch_metadate(self):
         """
             Получение даты последней точки в коллекции
             :output:
                 str: Дата в формате YY-mm-dd
         """
-        # Получаем все записи коллекции
-        scroll_result = self.client.scroll(
-            collection_name=self.collection_name,
-            limit=self.points_count,
-            with_payload=True,
-            with_vectors=False,
-        )
+        offset = None
+        clients = set()
+        products = set()
+        date_last_record = 0
 
-        # Сортируем по registry_date
-        last_point = max(
-            scroll_result[0],
-            key=lambda p: p.payload["registry_date"]
-        )
+        # Получаем все записи коллекции по 1000, чтоб не тратить RAM
+        while True:
+            scroll_result = self.qdrant_client.scroll(
+                collection_name=self.collection_name,
+                limit=1000,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            points = scroll_result[0]
 
-        # Извлекаем только дату
-        last_date = last_point.payload["registry_date"]
+            # Проходимся по каждой записи
+            for p in points:
+                clients.add(p.payload["client"])
+                products.add(p.payload["product"])
 
-        return datetime.fromtimestamp(last_date).date()
+                # Ищем последнюю дату
+                if p.payload["registry_date"] > date_last_record:
+                    date_last_record = p.payload["registry_date"]
+
+            offset = scroll_result[1]
+            if offset is None:
+                break
+
+        self.client = list(clients)
+        log.info(f"Clients: {clients}")
+
+        self.products = list(products)
+        log.info(f"Products: {products}")
+
+        self.date_last_record = date_last_record
 
     def get_date_last_record(self):
         """

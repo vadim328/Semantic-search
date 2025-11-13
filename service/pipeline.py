@@ -18,7 +18,7 @@ class SemanticSearchEngine:
         )
 
         self.relational_db = RelationalDatabaseTouch(
-            "[CHANGE]"
+            "CHANGE"
         )
 
         # self.vector_db = VectorDatabaseTouch("http://localhost:6333")
