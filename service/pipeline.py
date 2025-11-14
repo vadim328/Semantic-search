@@ -107,24 +107,20 @@ class SemanticSearchEngine:
 
         log.info("Request for data ...")
         date_last_record = self.vector_db.get_date_last_record()
-        if date_last_record != datetime.now().date():
-            first_fetch = False
-            if date_last_record is None:
-                first_fetch = True
-                date_last_record = datetime.now().date()
-            first_fetch = False
-            await self.relational_db.fetch_data(first_fetch, date_last_record)
-            rows = self.relational_db.get_data()
+        first_fetch = False
+        if date_last_record is None:
+            first_fetch = True
+            date_last_record = datetime.now().date()
+        await self.relational_db.fetch_data(first_fetch, date_last_record)
+        rows = self.relational_db.get_data()
 
-            for row in rows:
-                log.debug(f"Text for preparation {row['problem']}")
-                text_bert = transforms_bert(text=row["problem"])["text"]
-                row["embedding"] = self.model.encode(text_bert)[0]
-                row["registry_date"] = row["registry_date"].timestamp()
+        for row in rows:
+            log.debug(f"Text for preparation {row['problem']}")
+            text_bert = transforms_bert(text=row["problem"])["text"]
+            row["embedding"] = self.model.encode(text_bert)[0]
+            row["registry_date"] = row["registry_date"].timestamp()
 
-            self.vector_db.save_embeddings(rows)
-        else:
-            log.info("Update skip, there is already data for the current date")
+        self.vector_db.save_embeddings(rows)
 
     async def background_updater(self):
         """
@@ -147,3 +143,11 @@ class SemanticSearchEngine:
         except asyncio.CancelledError:
             log.info("Background updater was cancelled.")
             raise
+
+    def get_metadata(self):
+        """
+            Формирует и передает метаданные
+                :output:
+                    dict: метаданные
+        """
+        return self.vector_db.get_metadata()

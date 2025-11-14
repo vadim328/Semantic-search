@@ -4,4 +4,3 @@ test.py
 *__pycache__*
 *.zip
 /models/onnx/*
-web.html

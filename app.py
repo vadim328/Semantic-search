@@ -1,10 +1,12 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
-import asyncio
+from fastapi.responses import JSONResponse
 from service.pipeline import SemanticSearchEngine
-import logging
 from service.logging_config import setup_logging
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import asyncio
+import logging
+
 
 setup_logging()  # настройка логирования
 log = logging.getLogger(__name__)
@@ -26,12 +28,13 @@ app.add_middleware(
 async def startup_event():
     await searcher.update()
     asyncio.create_task(searcher.background_updater())
+    app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
     log.info("Application is start and ready to go")
 
 
 @app.get("/Health")
 async def root():
-    return {"message": "Status OK"}
+    return {"Status": "OK"}
 
 
 @app.get('/find/{query}')
@@ -41,6 +44,11 @@ async def return_formulation(query: str):
     """
     log.info(f"Requested: {query}")
     return searcher.search(query)
+
+
+@app.get("/options")
+def get_products():
+    return searcher.get_metadata()
 
 
 @app.post('/search')

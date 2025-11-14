@@ -37,9 +37,6 @@ class RelationalDatabaseTouch:
         else:
             query = text(self.next_fetch_query)
         params = {"last_fetch_time": last_fetch_time}
-        date_str = '2025-11-13' # test
-        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date() # test
-        params = {"last_fetch_time": date_obj} # test
         async with self.Session() as session:
             try:
                 requests = await session.execute(query, params)
@@ -67,8 +64,7 @@ class VectorDatabaseTouch:
         self.vector_size = 312  # размер эмбеддинга
         self.distance = Distance.COSINE  # метрика
         self.points_count = 0
-        self.clients = []
-        self.products = []
+        self.metadata = {}
         self.date_last_record = None
         self.initialize()
 
@@ -88,7 +84,7 @@ class VectorDatabaseTouch:
             self.init_db()
         else:
             self.points_count = self._fetch_existing_points_count()
-            self._fetch_metadate()
+            self._fetch_metadata()
             log.info(f"Collection '{self.collection_name}' found, "
                      f"count points - {self.points_count}, "
                      f"date last point - {self.date_last_record}")
@@ -121,7 +117,7 @@ class VectorDatabaseTouch:
                 points=points
             )
             self.points_count = self.points_count + len(rows)  # Актуализируем количество точек
-            self._fetch_metadate()  # Актуализируем метаданные
+            self._fetch_metadata()  # Актуализируем метаданные
             log.info(f"✅ Embedding successfully saved in vector db. Date last points {self.date_last_record}")
         except Exception as e:
             log.info(f"Embedding unsuccessfully saved in vector db. Date last points {self.date_last_record}")
@@ -190,7 +186,7 @@ class VectorDatabaseTouch:
         info = self.qdrant_client.get_collection(collection_name=self.collection_name)
         return info.result.points_count or 0  # актуальное количество точек
 
-    def _fetch_metadate(self):
+    def _fetch_metadata(self):
         """
             Получение даты последней точки в коллекции
             :output:
@@ -225,11 +221,10 @@ class VectorDatabaseTouch:
             if offset is None:
                 break
 
-        self.client = list(clients)
-        log.info(f"Clients: {clients}")
-
-        self.products = list(products)
-        log.info(f"Products: {products}")
+        self.metadata = {
+            "clients": clients,
+            "products": products,
+        }
 
         self.date_last_record = date_last_record
 
@@ -240,6 +235,14 @@ class VectorDatabaseTouch:
                 datetime: дата последней записи в переменной
         """
         return self.date_last_record
+
+    def get_metadata(self):
+        """
+            Получение метаданных векторной БД
+            :output:
+                dict: метаданные
+        """
+        return self.metadata
 
 
 
