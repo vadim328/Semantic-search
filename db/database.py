@@ -6,8 +6,11 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, PointStruct, Distance
 from qdrant_client.http import models
 import logging
+from config import Config
+
 
 log = logging.getLogger(__name__)
+cfg = Config().data
 
 
 # Загружаем SQL из файла
@@ -17,10 +20,9 @@ def load_query(path: str) -> str:
 
 
 class RelationalDatabaseTouch:
-    def __init__(self, url):
-        engine = create_async_engine(url)
+    def __init__(self):
+        engine = create_async_engine(cfg["database"]["relational_db"]["url"])
         self.Session = async_sessionmaker(bind=engine)
-        #self.first_fetch_query = load_query("db/queries/fetch_all_requests.sql")
         self.fetch_query = text(load_query("db/queries/fetch_requests.sql"))
         self.requests = {}
 
@@ -53,15 +55,15 @@ class RelationalDatabaseTouch:
 
 
 class VectorDatabaseTouch:
-    def __init__(self, url):
+    def __init__(self):
         # Подключаемся к Qdrant
-        self.qdrant_client = QdrantClient(url)
-        self.collection_name = "support_tickets"  # Название коллекции
+        self.qdrant_client = QdrantClient(cfg["database"]["vector_db"]["url"])
+        self.collection_name = cfg["database"]["vector_db"]["collection_name"]  # Название коллекции
         self.vector_size = 312  # размер эмбеддинга
         self.distance = Distance.COSINE  # метрика
         self.points_count = 0
         self.metadata = {}
-        self.date_last_record = datetime.strptime("2025-11-14", "%Y-%m-%d").timestamp()
+        self.date_last_record = None
         self.initialize()
 
     def init_db(self):
@@ -77,6 +79,9 @@ class VectorDatabaseTouch:
         # Проверяем, существует ли коллекция
         if not self.qdrant_client.collection_exists(self.collection_name):
             log.info(f"Collection '{self.collection_name}' not found")
+            self.date_last_record = datetime.strptime(
+                cfg["database"]["vector_db"]["date_from"],
+                "%Y-%m-%d").timestamp()
             self.init_db()
         else:
             self.points_count = self._fetch_existing_points_count()
@@ -114,45 +119,54 @@ class VectorDatabaseTouch:
             )
             self.points_count = self.points_count + len(rows)  # Актуализируем количество точек
             self._update_metadata()  # Актуализируем метаданные
-            log.info(f"✅ Embedding successfully saved in vector db. Date for next update {self.date_last_record}")
+            log.info(f"✅ Embedding successfully saved in vector db. Date for next update {self.get_date_last_record()}")
         except Exception as e:
-            log.info(f"Embedding unsuccessfully saved in vector db. Date for next update {self.date_last_record}")
+            log.info(f"Embedding unsuccessfully saved in vector db. Date for next update {self.get_date_last_record()}")
 
-    def _build_filter(self, filters):
-
-        log.info("Add filters ...")
+    @staticmethod
+    def _build_filter(filters: dict):
+        """
+            Создаёт объект Filter для Qdrant из словаря фильтров.
+            Автоматически поддерживает:
+                - точное совпадение по любому ключу
+                - диапазоны дат: date_from, date_to
+            :input:
+                dict: массив фильтров
+        """
+        log.info("Building filters...")
         conditions = []
-        if filters.get("client"):
-            conditions.append(
-                models.FieldCondition(
-                    key="client",
-                    match=models.MatchValue(value=filters.get("client"))
+
+        for key, value in filters.items():
+            if value is None:
+                continue
+
+            # Специальная обработка диапазонов дат
+            if key == "date_from":
+                ts = datetime.strptime(value, "%Y-%m-%d").timestamp()
+                conditions.append(
+                    models.FieldCondition(
+                        key="registry_date",
+                        range=models.Range(gte=ts)
+                    )
                 )
-            )
-        if filters.get("product"):
-            conditions.append(
-                models.FieldCondition(
-                    key="product",
-                    match=models.MatchValue(value=filters.get("product"))
+            elif key == "date_to":
+                ts = datetime.strptime(value, "%Y-%m-%d").timestamp()
+                conditions.append(
+                    models.FieldCondition(
+                        key="registry_date",
+                        range=models.Range(lte=ts)
+                    )
                 )
-            )
-        if filters.get("date_from"):
-            date_from = datetime.strptime(filters.get("date_from"), "%Y-%m-%d").timestamp()
-            conditions.append(
-                models.FieldCondition(
-                    key="registry_date",
-                    range=models.Range(gte=date_from)
+            else:
+                # Любые другие поля считаем точным совпадением
+                conditions.append(
+                    models.FieldCondition(
+                        key=key,
+                        match=models.MatchValue(value=value)
+                    )
                 )
-            )
-        if filters.get("date_to"):
-            date_to = datetime.strptime(filters.get("date_to"), "%Y-%m-%d").timestamp()
-            conditions.append(
-                models.FieldCondition(
-                    key="registry_date",
-                    range=models.Range(lte=date_to)
-                )
-            )
-        log.info("Filters added")
+
+        log.info(f"Filters added: {len(conditions)} conditions")
         return models.Filter(must=conditions) if conditions else None
 
     def fetch_embeddings(self, embedding, filters):

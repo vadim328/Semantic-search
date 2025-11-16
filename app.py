@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import asyncio
 import logging
+from config import Config
 
 
 setup_logging()  # настройка логирования
@@ -26,6 +27,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
+    Config()  # Считываем файл на старте
     await searcher.update()
     asyncio.create_task(searcher.background_updater())
     app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

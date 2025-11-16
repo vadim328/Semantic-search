@@ -1,0 +1,14 @@
+database:
+  relational_db:
+    url: ""
+  vector_db:
+    url: ""
+    collection_name: ""
+    date_from: ""
+
+model:
+  path: ""
+  model_name: ""
+
+logging:
+  level: ""

@@ -6,25 +6,25 @@ from db.database import RelationalDatabaseTouch, VectorDatabaseTouch
 from rank_bm25 import BM25Okapi
 from text_processing.text_preparation import transforms_bm25, transforms_bert
 import logging
+from config import Config
 
 log = logging.getLogger(__name__)
+cfg = Config().data
 
 
 class SemanticSearchEngine:
     def __init__(self):
         self.model = OnnxSentenseTransformer(
-            'models/onnx/optim/',
-            'model_optimized.onnx'
+            cfg["model"]["path"],
+            cfg["model"]["model_name"]
         )
 
-        self.relational_db = RelationalDatabaseTouch(
-            "CHANGE"
-        )
+        self.relational_db = RelationalDatabaseTouch()
 
-        # self.vector_db = VectorDatabaseTouch("http://localhost:6333")
-        self.vector_db = VectorDatabaseTouch(":memory:")
+        self.vector_db = VectorDatabaseTouch()
 
-    def calculation(self, data_calculation: dict):
+    @staticmethod
+    def calculation(data_calculation: dict):
         """
             Рассчет косинусного расстояния в совокупности
             с рассчетом значения BM25

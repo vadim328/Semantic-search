@@ -1,12 +1,18 @@
 import logging
 import sys
+from config import Config
+
+
+cfg = Config().data
 
 
 def setup_logging():
-    """Настройка логирования сервиса
     """
+        Настройка логирования сервиса
+    """
+    log_level = logging.INFO if cfg["logging"]["level"] == "INFO" else logging.DEBUG
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+    logger.setLevel(log_level)
 
     # Проверка, чтобы не добавлять повторно обработчики
     if not logger.handlers:
