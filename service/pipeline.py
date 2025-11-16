@@ -92,10 +92,12 @@ class SemanticSearchEngine:
         )
         log.info(f'Result fetching')
         calc = calc[:limit]
-        ranked = {}
+        ranked = []
         for i in calc:
-            ranked[str(i[0])] = str(round(i[1] * 100)) + "%"
-
+            ranked.append({
+                "ID": str(i[0]),
+                "score": str(round(i[1] * 100)) + "%"
+            })
         return ranked
 
     async def update(self):

@@ -20,7 +20,7 @@ class RelationalDatabaseTouch:
     def __init__(self, url):
         engine = create_async_engine(url)
         self.Session = async_sessionmaker(bind=engine)
-        self.first_fetch_query = load_query("db/queries/fetch_all_requests.sql")
+        #self.first_fetch_query = load_query("db/queries/fetch_all_requests.sql")
         self.fetch_query = text(load_query("db/queries/fetch_requests.sql"))
         self.requests = {}
 
