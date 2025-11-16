@@ -31,7 +31,6 @@ async def startup_event():
     await searcher.update()
     asyncio.create_task(searcher.background_updater())
     app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
-    log.info("Application is start and ready to go")
 
 
 @app.get("/Health")
@@ -55,7 +54,9 @@ def get_products():
 
 @app.post('/search')
 async def search(request: Request):
-    """Обработка POST-запроса /search"""
+    """
+    Обработка POST-запроса /search
+    """
     data = await request.json()
 
     query = data.get("query")

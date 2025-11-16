@@ -121,7 +121,8 @@ class VectorDatabaseTouch:
             self._update_metadata()  # Актуализируем метаданные
             log.info(f"✅ Embedding successfully saved in vector db. Date for next update {self.get_date_last_record()}")
         except Exception as e:
-            log.info(f"Embedding unsuccessfully saved in vector db. Date for next update {self.get_date_last_record()}")
+            log.info(f"Embedding unsuccessfully saved in vector db. Error: {e}")
+            log.info(f"Date for next update {self.get_date_last_record()}")
 
     @staticmethod
     def _build_filter(filters: dict):
@@ -142,19 +143,21 @@ class VectorDatabaseTouch:
 
             # Специальная обработка диапазонов дат
             if key == "date_from":
-                ts = datetime.strptime(value, "%Y-%m-%d").timestamp()
+                if not isinstance(value, float):
+                    value = datetime.strptime(value, "%Y-%m-%d").timestamp()
                 conditions.append(
                     models.FieldCondition(
                         key="registry_date",
-                        range=models.Range(gte=ts)
+                        range=models.Range(gte=value)
                     )
                 )
             elif key == "date_to":
-                ts = datetime.strptime(value, "%Y-%m-%d").timestamp()
+                if not isinstance(value, float):
+                    value = datetime.strptime(value, "%Y-%m-%d").timestamp()
                 conditions.append(
                     models.FieldCondition(
                         key="registry_date",
-                        range=models.Range(lte=ts)
+                        range=models.Range(lte=value)
                     )
                 )
             else:
@@ -201,15 +204,18 @@ class VectorDatabaseTouch:
             Обновление метаданных коллекции
         """
         offset = None
-        clients = set()
-        products = set()
-        # TODO добавить фильтр, чтоб проходиться по последним записям, а не по всем
-
+        clients = self.metadata.get("clients", set())
+        products = self.metadata.get("products", set())
+        # TODO Попробовать вынести данный фильтр в функцию сборки фильтров
+        scroll_filter = self._build_filter({
+            "date_from": self.date_last_record
+        })
         # Получаем все записи коллекции по 1000, чтоб не тратить RAM
         while True:
             scroll_result = self.qdrant_client.scroll(
                 collection_name=self.collection_name,
                 limit=1000,
+                scroll_filter=scroll_filter,
                 offset=offset,
                 with_payload=True,
                 with_vectors=False,
