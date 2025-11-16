@@ -21,10 +21,10 @@ class RelationalDatabaseTouch:
         engine = create_async_engine(url)
         self.Session = async_sessionmaker(bind=engine)
         self.first_fetch_query = load_query("db/queries/fetch_all_requests.sql")
-        self.next_fetch_query = load_query("db/queries/fetch_requests_last.sql")
+        self.fetch_query = text(load_query("db/queries/fetch_requests.sql"))
         self.requests = {}
 
-    async def fetch_data(self, first_fetch: bool, last_fetch_time: datetime):
+    async def fetch_data(self, from_date: datetime):
         """
             Получение данных из БД, сохраняет в переменную
             :input:
@@ -32,14 +32,10 @@ class RelationalDatabaseTouch:
                 datetime: Дата последней записи в векторной БД
                     или дата последнего успешного сохранения
         """
-        if first_fetch:
-            query = text(self.first_fetch_query)
-        else:
-            query = text(self.next_fetch_query)
-        params = {"last_fetch_time": last_fetch_time}
+        params = {"from_date": from_date}
         async with self.Session() as session:
             try:
-                requests = await session.execute(query, params)
+                requests = await session.execute(self.fetch_query, params)
                 self.requests = [dict(row) for row in requests.mappings().all()]
                 log.info(f"Data received from relational db, count rows - {len(self.requests)}")
             except Exception as e:
@@ -65,7 +61,7 @@ class VectorDatabaseTouch:
         self.distance = Distance.COSINE  # метрика
         self.points_count = 0
         self.metadata = {}
-        self.date_last_record = None
+        self.date_last_record = datetime.strptime("2025-11-14", "%Y-%m-%d").timestamp()
         self.initialize()
 
     def init_db(self):
@@ -84,7 +80,7 @@ class VectorDatabaseTouch:
             self.init_db()
         else:
             self.points_count = self._fetch_existing_points_count()
-            self._fetch_metadata()
+            self._update_metadata()
             log.info(f"Collection '{self.collection_name}' found, "
                      f"count points - {self.points_count}, "
                      f"date last point - {self.date_last_record}")
@@ -117,10 +113,10 @@ class VectorDatabaseTouch:
                 points=points
             )
             self.points_count = self.points_count + len(rows)  # Актуализируем количество точек
-            self._fetch_metadata()  # Актуализируем метаданные
-            log.info(f"✅ Embedding successfully saved in vector db. Date last points {self.date_last_record}")
+            self._update_metadata()  # Актуализируем метаданные
+            log.info(f"✅ Embedding successfully saved in vector db. Date for next update {self.date_last_record}")
         except Exception as e:
-            log.info(f"Embedding unsuccessfully saved in vector db. Date last points {self.date_last_record}")
+            log.info(f"Embedding unsuccessfully saved in vector db. Date for next update {self.date_last_record}")
 
     def _build_filter(self, filters):
 
@@ -186,16 +182,14 @@ class VectorDatabaseTouch:
         info = self.qdrant_client.get_collection(collection_name=self.collection_name)
         return info.result.points_count or 0  # актуальное количество точек
 
-    def _fetch_metadata(self):
+    def _update_metadata(self):
         """
-            Получение даты последней точки в коллекции
-            :output:
-                str: Дата в формате YY-mm-dd
+            Обновление метаданных коллекции
         """
         offset = None
         clients = set()
         products = set()
-        date_last_record = 0
+        # TODO добавить фильтр, чтоб проходиться по последним записям, а не по всем
 
         # Получаем все записи коллекции по 1000, чтоб не тратить RAM
         while True:
@@ -214,8 +208,8 @@ class VectorDatabaseTouch:
                 products.add(p.payload["product"])
 
                 # Ищем последнюю дату
-                if p.payload["registry_date"] > date_last_record:
-                    date_last_record = p.payload["registry_date"]
+                if p.payload["registry_date"] > self.date_last_record:
+                    self.date_last_record = p.payload["registry_date"]
 
             offset = scroll_result[1]
             if offset is None:
@@ -226,15 +220,13 @@ class VectorDatabaseTouch:
             "products": products,
         }
 
-        self.date_last_record = date_last_record
-
     def get_date_last_record(self):
         """
             Получение даты последней записи из переменной
             :output:
                 datetime: дата последней записи в переменной
         """
-        return self.date_last_record
+        return datetime.fromtimestamp(self.date_last_record)
 
     def get_metadata(self):
         """

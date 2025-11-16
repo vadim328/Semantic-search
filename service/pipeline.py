@@ -74,9 +74,7 @@ class SemanticSearchEngine:
 
         cosine_scores, tokenized_querys = [], []
         numbers = []
-        log.info(f"{len(hits.points)}")
         for hit in hits.points:
-            log.info(type(hit.payload["registry_date"]))
             numbers.append(hit.id)
             cosine_scores.append(hit.score)
             tokens = transforms_bm25(text=hit.payload["text"])["text"].split()
@@ -106,12 +104,8 @@ class SemanticSearchEngine:
         """
 
         log.info("Request for data ...")
-        date_last_record = self.vector_db.get_date_last_record()
-        first_fetch = False
-        if date_last_record is None:
-            first_fetch = True
-            date_last_record = datetime.now().date()
-        await self.relational_db.fetch_data(first_fetch, date_last_record)
+        from_date = self.vector_db.get_date_last_record()
+        await self.relational_db.fetch_data(from_date)
         rows = self.relational_db.get_data()
 
         for row in rows:
