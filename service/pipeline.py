@@ -70,35 +70,40 @@ class SemanticSearchEngine:
         log.debug(f'transforms text for NN: {query_bert}')
 
         embedding = self.model.encode(query_bert)[0]
-        hits = self.vector_db.fetch_embeddings(embedding, filters)
+        try:
+            hits = self.vector_db.fetch_embeddings(embedding, filters)
 
-        cosine_scores, tokenized_querys = [], []
-        numbers = []
-        for hit in hits.points:
-            numbers.append(hit.id)
-            cosine_scores.append(hit.score)
-            tokens = transforms_bm25(text=hit.payload["text"])["text"].split()
-            log.debug(f"Text tokens: {tokens}")
-            tokenized_querys.append(tokens)
+            cosine_scores, tokenized_querys = [], []
+            numbers = []
+            for hit in hits.points:
+                numbers.append(hit.id)
+                cosine_scores.append(hit.score)
+                tokens = transforms_bm25(text=hit.payload["text"])["text"].split()
+                log.debug(f"Text tokens: {tokens}")
+                tokenized_querys.append(tokens)
 
-        calc = self.calculation(
-            {
-                "cosine_scores": cosine_scores,
-                "tokenized_querys": tokenized_querys,
-                "tokenized_query": tokenized_query,
-                "alpha": alpha,
-                "numbers": numbers,
-            }
-        )
-        log.info(f'Result fetching')
-        calc = calc[:limit]
-        ranked = []
-        for i in calc:
-            ranked.append({
-                "ID": str(i[0]),
-                "score": str(round(i[1] * 100)) + "%"
-            })
-        return ranked
+            calc = self.calculation(
+                {
+                    "cosine_scores": cosine_scores,
+                    "tokenized_querys": tokenized_querys,
+                    "tokenized_query": tokenized_query,
+                    "alpha": alpha,
+                    "numbers": numbers,
+                }
+            )
+            log.info(f'Result fetching')
+            calc = calc[:limit]
+            ranked = []
+            for i in calc:
+                ranked.append({
+                    "ID": str(i[0]),
+                    "score": str(round(i[1] * 100)) + "%"
+                })
+            return ranked
+        except ZeroDivisionError:
+            return {"result": "data not found"}
+        except Exception as e:
+            log.info(f"Error: {e}")
 
     async def update(self):
         """

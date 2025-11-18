@@ -1,0 +1,15 @@
+config.example.yaml
+README.md
+requests.csv
+test.py
+.idea/
+*.pyc
+*.log
+.env
+.git
+.gitignore
+__pycache__/
+.vscode/
+.idea/
+venv/
+Docker/

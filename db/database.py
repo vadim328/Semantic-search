@@ -63,7 +63,9 @@ class VectorDatabaseTouch:
         self.distance = Distance.COSINE  # метрика
         self.points_count = 0
         self.metadata = {}
-        self.date_last_record = None
+        self.date_last_record = datetime.strptime(
+            cfg["database"]["vector_db"]["date_from"],
+            "%Y-%m-%d").timestamp()
         self.initialize()
 
     def init_db(self):
@@ -79,16 +81,13 @@ class VectorDatabaseTouch:
         # Проверяем, существует ли коллекция
         if not self.qdrant_client.collection_exists(self.collection_name):
             log.info(f"Collection '{self.collection_name}' not found")
-            self.date_last_record = datetime.strptime(
-                cfg["database"]["vector_db"]["date_from"],
-                "%Y-%m-%d").timestamp()
             self.init_db()
         else:
             self.points_count = self._fetch_existing_points_count()
             self._update_metadata()
             log.info(f"Collection '{self.collection_name}' found, "
                      f"count points - {self.points_count}, "
-                     f"date last point - {self.date_last_record}")
+                     f"date last point - {self.get_date_last_record()}")
 
     def save_embeddings(self, rows: dict):
         """
@@ -197,16 +196,17 @@ class VectorDatabaseTouch:
                 int: Количество точек в коллекции
         """
         info = self.qdrant_client.get_collection(collection_name=self.collection_name)
-        return info.result.points_count or 0  # актуальное количество точек
+        return info.points_count or 0  # актуальное количество точек
 
     def _update_metadata(self):
         """
-            Обновление метаданных коллекции
+            Обновление метаданных коллекции.
+            Для ускорения добавлен фильтр даты последней записи,
+            чтоб не проходить по всем точкам каждый раз.
         """
         offset = None
         clients = self.metadata.get("clients", set())
         products = self.metadata.get("products", set())
-        # TODO Попробовать вынести данный фильтр в функцию сборки фильтров
         scroll_filter = self._build_filter({
             "date_from": self.date_last_record
         })
