@@ -105,23 +105,63 @@ class SemanticSearchEngine:
         except Exception as e:
             log.info(f"Error: {e}")
 
+    @staticmethod
+    def _extract_date_interval(start_interval: datetime):
+        """
+            Вычисление временных интервалов для их использования в запросах
+                Конец интервала - текущая дата и время
+            :input:
+                datetime: Начальная дата
+            :return:
+                list: Список кортежей с начальной и конечной датами
+
+        """
+        log.info("Calculation data intervals ...")
+        intervals = []
+        start_interval = start_interval.timestamp()
+        end_interval = datetime.now().timestamp()
+        while True:
+            batch_end = start_interval + 2592000  # Берем месяц
+            if batch_end >= end_interval:
+                intervals.append(
+                    {"from_date": datetime.fromtimestamp(start_interval),
+                     "to_date": datetime.fromtimestamp(end_interval)}
+                )
+                break
+            intervals.append(
+                {"from_date": datetime.fromtimestamp(start_interval),
+                 "to_date": datetime.fromtimestamp(batch_end)}
+            )
+            # Переводим начало в конец предыдущего интервала
+            start_interval = batch_end
+
+        log.info(f"Intervals fetching: {intervals}")
+        return intervals
+
     async def update(self):
         """
             Получение новых данных и сохранение их в векторную БД
         """
 
         log.info("Request for data ...")
+
         from_date = self.vector_db.get_date_last_record()
-        await self.relational_db.fetch_data(from_date)
-        rows = self.relational_db.get_data()
+        date_intervals = self._extract_date_interval(from_date)
+        for date_interval in date_intervals:
 
-        for row in rows:
-            log.debug(f"Text for preparation {row['problem']}")
-            text_bert = transforms_bert(text=row["problem"])["text"]
-            row["embedding"] = self.model.encode(text_bert)[0]
-            row["registry_date"] = row["registry_date"].timestamp()
+            log.info(f"Work at intervals of {date_interval} ...")
+            await self.relational_db.fetch_data(date_interval)
+            rows = self.relational_db.get_data()
 
-        self.vector_db.save_embeddings(rows)
+            for row in rows:
+                log.debug(f"Text for preparation {row['problem']}")
+                text_bert = transforms_bert(text=row["problem"])["text"]
+                row["embedding"] = self.model.encode(text_bert)[0]
+                row["registry_date"] = row["registry_date"].timestamp()
+
+            self.vector_db.save_embeddings(rows)
+
+            log.info("Interval work completed")
 
     async def background_updater(self):
         """

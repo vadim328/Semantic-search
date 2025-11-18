@@ -8,7 +8,6 @@ from qdrant_client.http import models
 import logging
 from config import Config
 
-
 log = logging.getLogger(__name__)
 cfg = Config().data
 
@@ -26,7 +25,7 @@ class RelationalDatabaseTouch:
         self.fetch_query = text(load_query("db/queries/fetch_requests.sql"))
         self.requests = {}
 
-    async def fetch_data(self, from_date: datetime):
+    async def fetch_data(self, params: dict):
         """
             Получение данных из БД, сохраняет в переменную
             :input:
@@ -34,7 +33,6 @@ class RelationalDatabaseTouch:
                 datetime: Дата последней записи в векторной БД
                     или дата последнего успешного сохранения
         """
-        params = {"from_date": from_date}
         async with self.Session() as session:
             try:
                 requests = await session.execute(self.fetch_query, params)
@@ -255,8 +253,3 @@ class VectorDatabaseTouch:
                 dict: метаданные
         """
         return self.metadata
-
-
-
-
-
