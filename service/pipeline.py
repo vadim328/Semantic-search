@@ -47,7 +47,7 @@ class SemanticSearchEngine:
         # --- Ранжируем ---
         return sorted(zip(data_calculation["numbers"], hybrid_scores), key=lambda x: x[1], reverse=True)
 
-    def search(self, query: str, limit=5, alpha=0.5, filters=None):
+    def search(self, query: str, limit=5, alpha=0.5, exact=True, filters=None):
         """
             Поиск информации по векторной БД
 
@@ -71,7 +71,7 @@ class SemanticSearchEngine:
 
         embedding = self.model.encode(query_bert)[0]
         try:
-            hits = self.vector_db.fetch_embeddings(embedding, filters)
+            hits = self.vector_db.fetch_embeddings(embedding, exact, filters)
 
             cosine_scores, tokenized_querys = [], []
             numbers = []

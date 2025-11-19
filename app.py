@@ -62,8 +62,9 @@ async def search(request: Request):
     query = data.get("query")
     limit = data.get("limit", 5)
     alpha = data.get("alpha", 0.5)
+    exact = data.get("exact", False)
     filters = data.get("filter", {})
 
-    log.info(f"Request {query}, limit: {limit}, alpha: {alpha}")
+    log.info(f"Request: {query}, limit: {limit}, alpha: {alpha}, exact: {exact}")
 
-    return JSONResponse(searcher.search(query, limit, alpha, filters))
+    return JSONResponse(searcher.search(query, limit, alpha, exact, filters))

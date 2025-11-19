@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from datetime import datetime
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import VectorParams, PointStruct, Distance
+from qdrant_client.models import VectorParams, PointStruct, Distance, \
+    HnswConfigDiff, SearchParams
 from qdrant_client.http import models
 import logging
 from config import Config
@@ -73,6 +74,13 @@ class VectorDatabaseTouch:
         self.qdrant_client.create_collection(
             collection_name=self.collection_name,
             vectors_config=VectorParams(size=self.vector_size, distance=self.distance),
+            hnsw_config=HnswConfigDiff(
+                m=128,                     # Сколько k-ближайших соседей хранить
+                ef_construct=600,          # сколько кандидатов анализируется при вставке точки
+                full_scan_threshold=1000,  # Количество точек когда не нужен hnsw
+                max_indexing_threads=0,    # Количество потоков, 0 - авто
+                on_disk=False              # где хранить граф
+            )
         )
 
     def initialize(self):
@@ -169,20 +177,29 @@ class VectorDatabaseTouch:
         log.info(f"Filters added: {len(conditions)} conditions")
         return models.Filter(must=conditions) if conditions else None
 
-    def fetch_embeddings(self, embedding, filters):
+    def fetch_embeddings(self, embedding, exact, filters):
         """
             Получаем все эмбеддинги из Qdrant
             :input:
                 np.array: Исходный эмбеддинг
+                bool: Требуется ли использовать поиск по графу
+                dict: Фильтры для поиска
+            return:
+                custom qdrant class: результат поиска по векторной БД
         """
         log.info("Fetch embeddings from vector db ...")
+
         # Добавляем фильтр
         query_filter = self._build_filter(filters)
         hits = self.qdrant_client.query_points(
             collection_name=self.collection_name,
             query=embedding,
-            limit=self.points_count,  # Находим все точки
-            query_filter=query_filter
+            limit=self.points_count if exact else 500,  # Находим все точки, если не быстрый поиск
+            query_filter=query_filter,
+            search_params=SearchParams(
+                exact=exact,  # False - используем индексы
+                hnsw_ef=512   # Количество кандидатов для рассмотерния
+            ),
         )
         log.info("✅ Embedding received successfully")
         return hits
@@ -208,7 +225,7 @@ class VectorDatabaseTouch:
         scroll_filter = self._build_filter({
             "date_from": self.date_last_record
         })
-        # Получаем все записи коллекции по 1000, чтоб не тратить RAM
+        # Получаем все записи коллекции по 1000, чтоб не нагружать RAM
         while True:
             scroll_result = self.qdrant_client.scroll(
                 collection_name=self.collection_name,
