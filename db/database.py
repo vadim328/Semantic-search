@@ -75,11 +75,11 @@ class VectorDatabaseTouch:
             collection_name=self.collection_name,
             vectors_config=VectorParams(size=self.vector_size, distance=self.distance),
             hnsw_config=HnswConfigDiff(
-                m=cfg["database"]["indexing"]["m_value"],
-                ef_construct=cfg["database"]["indexing"]["ef_construct"],
-                full_scan_threshold=cfg["database"]["indexing"]["full_scan_threshold"],
-                max_indexing_threads=cfg["database"]["indexing"]["max_indexing_threads"],
-                on_disk=cfg["database"]["indexing"]["on_disk"],
+                m=cfg["database"]["vector_db"]["indexing"]["m_value"],
+                ef_construct=cfg["database"]["vector_db"]["indexing"]["ef_construct"],
+                full_scan_threshold=cfg["database"]["vector_db"]["indexing"]["full_scan_threshold"],
+                max_indexing_threads=cfg["database"]["vector_db"]["indexing"]["max_indexing_threads"],
+                on_disk=cfg["database"]["vector_db"]["indexing"]["on_disk"],
             )
         )
 
