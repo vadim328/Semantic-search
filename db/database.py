@@ -56,14 +56,14 @@ class RelationalDatabaseTouch:
 class VectorDatabaseTouch:
     def __init__(self):
         # Подключаемся к Qdrant
-        self.qdrant_client = QdrantClient(cfg["database"]["vector_db"]["url"])
-        self.collection_name = cfg["database"]["vector_db"]["collection_name"]  # Название коллекции
+        self.qdrant_client = QdrantClient(cfg["database"]["vector_db"]["main"]["url"])
+        self.collection_name = cfg["database"]["vector_db"]["main"]["collection_name"]
         self.vector_size = 312  # размер эмбеддинга
         self.distance = Distance.COSINE  # метрика
         self.points_count = 0
         self.metadata = {}
         self.date_last_record = datetime.strptime(
-            cfg["database"]["vector_db"]["date_from"],
+            cfg["database"]["vector_db"]["main"]["date_from"],
             "%Y-%m-%d").timestamp()
         self.initialize()
 
@@ -75,11 +75,11 @@ class VectorDatabaseTouch:
             collection_name=self.collection_name,
             vectors_config=VectorParams(size=self.vector_size, distance=self.distance),
             hnsw_config=HnswConfigDiff(
-                m=128,                     # Сколько k-ближайших соседей хранить
-                ef_construct=600,          # сколько кандидатов анализируется при вставке точки
-                full_scan_threshold=1000,  # Количество точек когда не нужен hnsw
-                max_indexing_threads=0,    # Количество потоков, 0 - авто
-                on_disk=False              # где хранить граф
+                m=cfg["database"]["indexing"]["m_value"],
+                ef_construct=cfg["database"]["indexing"]["ef_construct"],
+                full_scan_threshold=cfg["database"]["indexing"]["full_scan_threshold"],
+                max_indexing_threads=cfg["database"]["indexing"]["max_indexing_threads"],
+                on_disk=cfg["database"]["indexing"]["on_disk"],
             )
         )
 

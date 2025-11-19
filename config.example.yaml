@@ -2,9 +2,16 @@ database:
   relational_db:
     url: ""
   vector_db:
-    url: ""
-    collection_name: ""
-    date_from: ""
+    main:
+      url: ""
+      collection_name: ""
+      date_from: ""
+    indexing:
+      m_value:               # Сколько k-ближайших соседей хранить
+      ef_construct:          # сколько кандидатов анализируется при вставке точки
+      full_scan_threshold:   # Количество точек когда не нужен hnsw
+      max_indexing_threads:  # Количество потоков, 0 - авто
+      on_disk:               # где хранить граф
 
 model:
   path: ""
