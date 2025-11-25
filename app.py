@@ -27,6 +27,11 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
+    """
+        Функция для первичного запуска приложения.
+            Инициализирует классы, подключаетсяк БД,
+                векторизует запросы и загружает их в БД
+    """
     Config()  # Считываем файл на старте
     await searcher.update()
     asyncio.create_task(searcher.background_updater())
@@ -41,7 +46,7 @@ async def root():
 @app.get('/find/{query}')
 async def return_formulation(query: str):
     """
-        Поиск запросов по тексту
+        GET - метод. Поиск запросов по тексту
     """
     log.info(f"Requested: {query}")
     return searcher.search(query)
@@ -49,13 +54,24 @@ async def return_formulation(query: str):
 
 @app.get("/options")
 def get_products():
+    """
+        GET - метод для получения списка проудктов и клиентов
+    """
     return searcher.get_metadata()
 
 
 @app.post('/search')
 async def search(request: Request):
     """
-    Обработка POST-запроса /search
+        POST - метод для поиска схожих запросов
+            :input:
+                query: Текст, по которобу будут искаться схожие запросы
+                limit: Ограничение на количество найденых совпадений в порядке убывания
+                alpha: коэффициент балансировки, принимающий значения в диапазоне от 0 до 1
+                        - При α = 0 полностью используется поиск через алгоритм BM25
+                        - При α = 1 полностью используется поиск по косинусной схожести
+                exact: Включение быстрого поиска по индексированным векторам
+                filter: Фильтры по датам, продукту и клиенту для сужения поиска
     """
     data = await request.json()
 
