@@ -12,8 +12,8 @@ services:
 
   # application
   search-service:
-    image: naumen/support-search:1.0.0
-    container_name: search-requests
+    image: naumen/support-routes:1.0.0
+    container_name: routes-requests
     volumes:
       - /opt/search_service/config.yaml:/app/config.yaml
       - /opt/search_service/config.py:/app/config.py

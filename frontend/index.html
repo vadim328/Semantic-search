@@ -141,7 +141,7 @@
 // Загружаем продукты и клиентов
 async function loadOptions() {
   try {
-    const res = await fetch("/options");
+    const res = await fetch("/search/options");
     const data = await res.json();
 
     const productSelect = document.getElementById("product");
