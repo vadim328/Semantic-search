@@ -27,28 +27,36 @@
 <pre>
 project/
 │
-├── app.py                   # Точка входа FastAPI
-│
-├── frontend/
-│   └── index.html           # HTML-файл веб-интерфейса (для демонстрации)
-│
-├── service/
-│   └── pipeline.py          # Основной пайплайн обработки запроса
-│   └── logging_config.py    # Конфигурационный python-файл для логирования приложения
-│
 ├── db/
 │   └── database.py          # Логика работы с Qdrant (инициализация, поиск, скролл), логика работы с PostgreSQL
 │   └── queries/             # Директория с шаблонами запросов в PostgreSQL
-│
-├── ml/
-│   └── model.py             # Класс для получения BERT-эмбеддингов
-│   └── onnx/                # Директория с моделяги в формате onnx
 │
 ├── Docker/                
 │   └── Dockerfile           # Dockerfile для создания образа приложения
 │   └── docker-compose.yaml  # yaml файл для быстрого развертывания приложения из готового образа + Qdrant
 │
-├── config.yaml            # Конфигурация
+├── frontend/
+│   └── index.html           # HTML-файл веб-интерфейса (для демонстрации)
+│
+├── models/
+│   └── model.py             # Класс для получения BERT-эмбеддингов
+│   └── onnx/                # Директория с моделяги в формате onnx
+│
+├── routes/                
+│   └── search_routes.py     # Скрипт инициализации маршрутов для /search
+│
+├── service/
+│   └── pipeline.py          # Основной пайплайн обработки запроса
+│   └── logging_config.py    # Конфигурационный python-файл для логирования приложения
+│
+├── text_processing/                
+│   └── search_routes.py     # Обработка текста
+│
+├── app.py                   # Точка входа FastAPI
+│
+├── config.py                # Конфигурационный скрипт
+│
+├── config.yaml              # Конфигурационный файл
 │ 
 └── README.md
 </pre>
@@ -95,7 +103,7 @@ http://localhost:6333
 
 HTTP POST
 <pre>
-POST http://host:port/search
+POST http://host:port/search/
 
 Headers: "Content-Type: application/json"
 
@@ -145,7 +153,7 @@ Headers: "Content-Type: application/json"
 Пример curl запроса:
 
 <pre>
-curl -X POST "192.168.211.244:5000/search" \
+curl -X POST "192.168.211.244:5000/search/" \
 -H "Content-Type: application/json" \
 -d '{"query": "прошу прислать скрипт которым очищаются данные или сами запросы которые используются.", "limit": 6, "alpha": 0.6, "exact": false}'
 </pre>
@@ -164,6 +172,35 @@ curl -X POST "192.168.211.244:5000/search" \
    - "client":  Полное наименование клиента в SD
    - "date_from": Дата создания запроса от
    - "date_to": Дата создания запроса до
+ 
+Получения списка доступных продуктов и клиентов для использования их в поиске:
+
+HTTP GET
+<pre>
+GET http://host:port/search/options
+</pre>
+
+Пример ответа:
+<pre>
+{
+    "clients":[
+                "Магнит",
+                "КРОК",
+                "Top Contact Топ Контакт",
+                "Промсвязьбанк", 
+                "Глонасс",
+                "Мосэнергосбыт"
+              ],
+    "products":[
+                "NCC.SaaS",
+                "Naumen Erudite",
+                "NCC",
+                "ЦБ"
+               ]
+}
+</pre>
+
+
 ***
 ⚙️ Описание конфигурационного файла
 

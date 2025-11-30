@@ -18,7 +18,7 @@ def create_search_router(searcher: SemanticSearchEngine) -> APIRouter:
         """
         return searcher.get_metadata()
 
-    @router.post("")
+    @router.post("/")
     async def search(request: Request):
         """
             POST - метод для поиска схожих запросов
