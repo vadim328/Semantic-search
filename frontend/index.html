@@ -6,7 +6,7 @@
 <style>
   body {
     font-family: Arial, sans-serif;
-    max-width: 700px;
+    max-width: 1000px;
     margin: 40px auto;
     background: #fafafa;
     padding: 25px 30px 50px;
@@ -73,19 +73,41 @@
   }
   button:hover { background-color: #0056b3; }
 
-  pre {
-    background: #eee;
-    padding: 10px;
-    border-radius: 8px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    margin-top: 20px;
-  }
-
   #result.loading::before {
     content: "Выполняется поиск...";
     color: #555;
     font-style: italic;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+  }
+
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+
+  th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+  }
+
+  tr:hover {
+    background-color: #f9f9f9;
+  }
+
+  a {
+    color: #007bff;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
   }
 </style>
 </head>
@@ -134,7 +156,7 @@
 </form>
 
 <h3>Результат:</h3>
-<pre id="result"></pre>
+<div id="result"></div>
 
 <script>
 
@@ -199,7 +221,7 @@ document.getElementById("searchForm").addEventListener("submit", async (e) => {
 
   // Показываем сообщение о поиске
   const resultEl = document.getElementById("result");
-  resultEl.textContent = ""; // очищаем предыдущий результат
+  resultEl.innerHTML = "";
   resultEl.classList.add("loading");
 
   try {
@@ -211,10 +233,41 @@ document.getElementById("searchForm").addEventListener("submit", async (e) => {
     const data = await res.json();
 
     resultEl.classList.remove("loading");
-    resultEl.textContent = JSON.stringify(data, null, 2);
+
+    if (!Array.isArray(data) || data.length === 0) {
+      resultEl.innerHTML = "<p>Нет результатов</p>";
+      return;
+    }
+
+    // Определяем заголовки (исключая url)
+    const sample = data[0];
+    const keys = Object.keys(sample).filter(k => k !== 'url');
+
+    let tableHTML = `<table><thead><tr>`;
+    keys.forEach(key => {
+      tableHTML += `<th>${key === 'id' ? 'ID' : key}</th>`;
+    });
+    tableHTML += `</tr></thead><tbody>`;
+
+    data.forEach(row => {
+      tableHTML += `<tr>`;
+      keys.forEach(key => {
+        if (key === 'id') {
+          const link = row.url || '#';
+          tableHTML += `<td><a href="${link}" target="_blank">${row.id}</a></td>`;
+        } else {
+          tableHTML += `<td>${row[key] != null ? row[key] : ''}</td>`;
+        }
+      });
+      tableHTML += `</tr>`;
+    });
+
+    tableHTML += `</tbody></table>`;
+    resultEl.innerHTML = tableHTML;
+
   } catch (err) {
     resultEl.classList.remove("loading");
-    resultEl.textContent = "Ошибка при выполнении поиска: " + err.message;
+    resultEl.innerHTML = `<p>Ошибка при выполнении поиска: ${err.message}</p>`;
   }
 });
 </script>

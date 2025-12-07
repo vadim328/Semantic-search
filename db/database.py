@@ -61,7 +61,7 @@ class RelationalDatabaseTouch:
                 dict: Результат запроса
         """
         additional_data = await self.make_request(self.additional_data_query, params)
-        log.info(f"Additional data received from relational db")
+        log.info(f"Additional data received from relational db: {additional_data}")
         return additional_data
 
     def get_data(self):
