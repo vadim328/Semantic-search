@@ -129,23 +129,33 @@ Headers: "Content-Type: application/json"
 [
   {
     "ID": "111111",
-    "score": "90%"
+    "score": "90%",
+    "responsible": "Петров Петр Петрович",
+    "url": "https://support.naumen.ru/sd/operator/#uuid:serviceCall$11111"
   },
   {
     "ID": "222222",
-    "score": "70%"
+    "score": "70%",
+    "responsible": "Петров Петр Петрович",
+    "url": "https://support.naumen.ru/sd/operator/#uuid:serviceCall$22222"
   },
   {
     "ID": "333333",
-    "score": "50%"
+    "score": "50%",
+    "responsible": "Петров Петр Петрович",
+    "url": "https://support.naumen.ru/sd/operator/#uuid:serviceCall$33333"
   },
   {
     "ID": "444444",
-    "score": "30%"
+    "score": "30%",
+    "responsible": "Петров Петр Петрович",
+    "url": "https://support.naumen.ru/sd/operator/#uuid:serviceCall$44444"
   },
   {
     "ID": "555555",
-    "score": "10%"
+    "score": "10%",
+    "responsible": "Петров Петр Петрович",
+    "url": "https://support.naumen.ru/sd/operator/#uuid:serviceCall$55555"
   }
 ]
 </pre>
@@ -215,7 +225,9 @@ GET http://host:port/search/options
     - max_indexing_threads - количество потоков, 0 - авто
     - on_disk - где хранить граф, False в RAM
 - model - путь до моделей в формате ONNX и название модели
-- logging - настройка уровня логирования приложения
+- service - блок с настройками сервиса
+  - threshold - Порог на отображение результатов, например результаты меннее 0.7 не будут возвращаться
+  - logging_level - настройка уровня логирования приложения
 
 Подробнее про индексирование Qdrant в [оффициальной документации](https://qdrant.tech/documentation/concepts/indexing/)
 ***
