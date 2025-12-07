@@ -20,8 +20,29 @@ class SemanticSearchEngine:
         )
 
         self.relational_db = RelationalDatabaseTouch()
-
         self.vector_db = VectorDatabaseTouch()
+
+    async def generate_result(self, calc_result: list):
+        """
+            Формирует итоговый результат поиска
+            :input:
+                list: Результаты поиска
+            :output:
+                dict: Результат поиска с дополнительной информацией
+        """
+        numbers = [i[0] for i in calc_result]
+        additional_data = await self.relational_db.fetch_additional_data({"numbers": numbers})
+
+        result = []
+        for r, ad in zip(calc_result, additional_data):
+            result.append({
+                "id": str(r[0]),
+                "score": str(round(r[1] * 100)) + "%",
+                "responsible": ad["fio"],
+                "url": "https://support.naumen.ru/sd/operator/#uuid:%s" % ad["servicecall"]
+            })
+
+        return result
 
     @staticmethod
     def calculation(data_calculation: dict):
@@ -47,7 +68,7 @@ class SemanticSearchEngine:
         # --- Ранжируем ---
         return sorted(zip(data_calculation["numbers"], hybrid_scores), key=lambda x: x[1], reverse=True)
 
-    def search(self, query: str, limit=5, alpha=0.5, exact=True, filters=None):
+    async def search(self, query: str, limit=5, alpha=0.5, exact=True, filters=None):
         """
             Поиск информации по векторной БД
 
@@ -92,14 +113,8 @@ class SemanticSearchEngine:
                 }
             )
             log.info(f'Result fetching')
-            calc = calc[:limit]
-            ranked = []
-            for i in calc:
-                ranked.append({
-                    "ID": str(i[0]),
-                    "score": str(round(i[1] * 100)) + "%"
-                })
-            return ranked
+
+            return await self.generate_result(calc[:limit])
         except ZeroDivisionError:
             return {"result": "data not found"}
         except Exception as e:

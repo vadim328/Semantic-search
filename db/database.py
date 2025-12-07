@@ -23,10 +23,10 @@ class RelationalDatabaseTouch:
     def __init__(self):
         engine = create_async_engine(cfg["database"]["relational_db"]["url"])
         self.Session = async_sessionmaker(bind=engine)
-        self.fetch_query = text(load_query("db/queries/fetch_requests.sql"))
+        self.additional_data_query = text(load_query("db/queries/additional_data.sql"))
         self.requests = {}
 
-    async def fetch_data(self, params: dict):
+    async def make_request(self, query, params=None):
         """
             Получение данных из БД, сохраняет в переменную
             :input:
@@ -36,11 +36,33 @@ class RelationalDatabaseTouch:
         """
         async with self.Session() as session:
             try:
-                requests = await session.execute(self.fetch_query, params)
-                self.requests = [dict(row) for row in requests.mappings().all()]
-                log.info(f"Data received from relational db, count rows - {len(self.requests)}")
+                response = await session.execute(query, params)
+                response = [dict(row) for row in response.mappings().all()]
+                return response
             except Exception as e:
                 log.error(f"Error retrieving data from relational db: {e}")
+
+    async def fetch_data(self, params: dict):
+        """
+            Формирование запроса на получение данных
+            :input:
+                dict: Параметры запроса
+        """
+        query = text(load_query("db/queries/fetch_requests.sql"))
+        self.requests = await self.make_request(query, params)
+        log.info(f"Data received from relational db, count rows - {len(self.requests)}")
+
+    async def fetch_additional_data(self, params: dict):
+        """
+            Формирование запроса на получение дополнительных данных
+            :input:
+                dict: Параметры запроса
+            :output:
+                dict: Результат запроса
+        """
+        additional_data = await self.make_request(self.additional_data_query, params)
+        log.info(f"Additional data received from relational db")
+        return additional_data
 
     def get_data(self):
         """
@@ -55,15 +77,16 @@ class RelationalDatabaseTouch:
 
 class VectorDatabaseTouch:
     def __init__(self):
+        self.qdrant_config = cfg["database"]["vector_db"]
         # Подключаемся к Qdrant
-        self.qdrant_client = QdrantClient(cfg["database"]["vector_db"]["main"]["url"])
-        self.collection_name = cfg["database"]["vector_db"]["main"]["collection_name"]
+        self.qdrant_client = QdrantClient(self.qdrant_config["main"]["url"])
+        self.collection_name = self.qdrant_config["main"]["collection_name"]
         self.vector_size = 312  # размер эмбеддинга
         self.distance = Distance.COSINE  # метрика
         self.points_count = 0
         self.metadata = {}
         self.date_last_record = datetime.strptime(
-            cfg["database"]["vector_db"]["main"]["date_from"],
+            self.qdrant_config["main"]["date_from"],
             "%Y-%m-%d").timestamp()
         self.initialize()
 
@@ -75,11 +98,11 @@ class VectorDatabaseTouch:
             collection_name=self.collection_name,
             vectors_config=VectorParams(size=self.vector_size, distance=self.distance),
             hnsw_config=HnswConfigDiff(
-                m=cfg["database"]["vector_db"]["indexing"]["m_value"],
-                ef_construct=cfg["database"]["vector_db"]["indexing"]["ef_construct"],
-                full_scan_threshold=cfg["database"]["vector_db"]["indexing"]["full_scan_threshold"],
-                max_indexing_threads=cfg["database"]["vector_db"]["indexing"]["max_indexing_threads"],
-                on_disk=cfg["database"]["vector_db"]["indexing"]["on_disk"],
+                m=self.qdrant_config["indexing"]["m_value"],
+                ef_construct=self.qdrant_config["indexing"]["ef_construct"],
+                full_scan_threshold=self.qdrant_config["indexing"]["full_scan_threshold"],
+                max_indexing_threads=self.qdrant_config["indexing"]["max_indexing_threads"],
+                on_disk=self.qdrant_config["indexing"]["on_disk"],
             )
         )
 
