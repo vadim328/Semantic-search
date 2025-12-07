@@ -34,10 +34,12 @@ class SemanticSearchEngine:
         additional_data = await self.relational_db.fetch_additional_data({"numbers": numbers})
 
         result = []
-        for r, ad in zip(calc_result, additional_data):
+        for cr, ad in zip(calc_result, additional_data):
+            if cr[1] < cfg["service"]["threshold"]:
+                continue
             result.append({
-                "id": str(r[0]),
-                "score": str(round(r[1] * 100)) + "%",
+                "id": str(cr[0]),
+                "score": str(round(cr[1] * 100)) + "%",
                 "responsible": ad["fio"],
                 "url": "https://support.naumen.ru/sd/operator/#uuid:%s" % ad["servicecall"]
             })

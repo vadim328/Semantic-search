@@ -10,7 +10,7 @@ def setup_logging():
     """
         Настройка логирования сервиса
     """
-    log_level = logging.INFO if cfg["logging"]["level"] == "INFO" else logging.DEBUG
+    log_level = logging.INFO if cfg["service"]["logging_level"] == "INFO" else logging.DEBUG
     logger = logging.getLogger()
     logger.setLevel(log_level)
 
