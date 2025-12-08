@@ -8,6 +8,8 @@ test.py
 .env
 .git
 .gitignore
+docker-compose.yaml
+Dockerfile
 __pycache__/
 .vscode/
 .idea/
