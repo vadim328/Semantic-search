@@ -131,30 +131,40 @@ Headers: "Content-Type: application/json"
     "ID": "111111",
     "score": "90%",
     "responsible": "Петров Петр Петрович",
+    "priority": "3",
+    "registry_date": "2025-12-29 14:35:11",
     "url": "https://support.naumen.ru/sd/operator/#uuid:serviceCall$11111"
   },
   {
     "ID": "222222",
     "score": "70%",
     "responsible": "Петров Петр Петрович",
+    "priority": 4,
+    "registry_date": "2025-12-29 13:35:11",
     "url": "https://support.naumen.ru/sd/operator/#uuid:serviceCall$22222"
   },
   {
     "ID": "333333",
     "score": "50%",
     "responsible": "Петров Петр Петрович",
+    "priority": 3,
+    "registry_date": "2025-12-29 10:35:11",
     "url": "https://support.naumen.ru/sd/operator/#uuid:serviceCall$33333"
   },
   {
     "ID": "444444",
     "score": "30%",
     "responsible": "Петров Петр Петрович",
+    "priority": 4,
+    "registry_date": "2025-12-29 11:35:11",
     "url": "https://support.naumen.ru/sd/operator/#uuid:serviceCall$44444"
   },
   {
     "ID": "555555",
     "score": "10%",
     "responsible": "Петров Петр Петрович",
+    "priority": 3,
+    "registry_date": "2025-12-29 12:35:11",
     "url": "https://support.naumen.ru/sd/operator/#uuid:serviceCall$55555"
   }
 ]
