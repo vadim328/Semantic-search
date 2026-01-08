@@ -5,6 +5,7 @@ from models.model import OnnxSentenseTransformer
 from db.database import RelationalDatabaseTouch, VectorDatabaseTouch
 from rank_bm25 import BM25Okapi
 from text_processing.text_preparation import transforms_bm25, transforms_bert
+from service.utils import timestamp_to_date
 import logging
 from config import Config
 
@@ -41,6 +42,8 @@ class SemanticSearchEngine:
                 "id": str(cr[0]),
                 "score": str(round(cr[1] * 100)) + "%",
                 "responsible": ad["fio"],
+                "priority": ad["admission_prority"],
+                "registry_date": str(timestamp_to_date(cr[2])),
                 "url": "https://support.naumen.ru/sd/operator/#uuid:%s" % ad["servicecall"]
             })
 
@@ -68,7 +71,8 @@ class SemanticSearchEngine:
         hybrid_scores = data_calculation["alpha"] * bm25_norm + (1 - data_calculation["alpha"]) * cosine_norm
 
         # --- Ранжируем ---
-        return sorted(zip(data_calculation["numbers"], hybrid_scores), key=lambda x: x[1], reverse=True)
+        return sorted(zip(data_calculation["numbers"], hybrid_scores, data_calculation["reg_dates"]),
+                      key=lambda x: x[1], reverse=True)
 
     async def search(self, query: str, limit=5, alpha=0.5, exact=True, filters=None):
         """
@@ -96,31 +100,33 @@ class SemanticSearchEngine:
         try:
             hits = self.vector_db.fetch_embeddings(embedding, exact, filters)
 
-            cosine_scores, tokenized_querys = [], []
-            numbers = []
+            calculation_data = {
+                "numbers": [],
+                "cosine_scores": [],
+                "tokenized_querys": [],
+                "tokenized_query": tokenized_query,
+                "reg_dates": [],
+                "alpha": alpha,
+            }
+
+            # Формируем данные для вычисления
             for hit in hits.points:
-                numbers.append(hit.id)
-                cosine_scores.append(hit.score)
                 tokens = transforms_bm25(text=hit.payload["text"])["text"].split()
                 log.debug(f"Text tokens: {tokens}")
-                tokenized_querys.append(tokens)
 
-            calc = self.calculation(
-                {
-                    "cosine_scores": cosine_scores,
-                    "tokenized_querys": tokenized_querys,
-                    "tokenized_query": tokenized_query,
-                    "alpha": alpha,
-                    "numbers": numbers,
-                }
-            )
+                calculation_data["numbers"].append(hit.id)
+                calculation_data["cosine_scores"].append(hit.score)
+                calculation_data["tokenized_querys"].append(tokens)
+                calculation_data["reg_dates"].append(hit.payload["registry_date"])
+
+            calc = self.calculation(calculation_data)
             log.info(f'Result fetching')
 
             return await self.generate_result(calc[:limit])
         except ZeroDivisionError:
             return {"result": "data not found"}
         except Exception as e:
-            log.info(f"Error: {e}")
+            log.error(f"Error: {e}")
 
     @staticmethod
     def _extract_date_interval(start_interval: datetime):
