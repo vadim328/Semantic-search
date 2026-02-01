@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from service.search_engine import SemanticSearchEngine
+from service.updater import DataUpdater
 from service.logging_config import setup_logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -11,11 +12,14 @@ from config import Config
 
 setup_logging()  # настройка логирования
 log = logging.getLogger(__name__)
+app = FastAPI()
 
 searcher = SemanticSearchEngine()
-search_router = create_search_router(searcher)
+updater = DataUpdater()
 
-app = FastAPI()
+# Подключаем роутер
+search_router = create_search_router(searcher)
+app.include_router(search_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,8 +28,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.include_router(search_router)  # Подключаем маршрут /search
 
 
 @app.on_event("startup")
@@ -36,8 +38,7 @@ async def startup_event():
                 векторизует запросы и загружает их в БД
     """
     Config()  # Считываем файл на старте
-    await searcher.update()
-    asyncio.create_task(searcher.background_updater())
+    asyncio.create_task(updater.run())
     app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 
