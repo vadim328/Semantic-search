@@ -1,6 +1,6 @@
 # routes/search_routes.py
 from fastapi import APIRouter, Request
-from service.pipeline import SemanticSearchEngine
+from service.search_engine import SemanticSearchEngine
 from fastapi.responses import JSONResponse
 import logging
 

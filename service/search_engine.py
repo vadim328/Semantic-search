@@ -1,9 +1,8 @@
-import numpy as np
 import asyncio
 from datetime import datetime, timedelta
 from models.model import OnnxSentenseTransformer
 from db.database import RelationalDatabaseTouch, VectorDatabaseTouch
-from rank_bm25 import BM25Okapi
+from service.scorer import HybridScorer
 from text_processing.text_preparation import transforms_bm25, transforms_bert
 from service.utils import timestamp_to_date
 import logging
@@ -23,58 +22,46 @@ class SemanticSearchEngine:
         self.relational_db = RelationalDatabaseTouch()
         self.vector_db = VectorDatabaseTouch()
 
-    async def generate_result(self, calc_result: list):
+        self.scorer = HybridScorer()
+
+    async def generate_result(self, calc_result: list[dict]):
         """
             Формирует итоговый результат поиска
             :input:
-                list: Результаты поиска
+                list[dict]: Результаты поиска
             :output:
-                dict: Результат поиска с дополнительной информацией
+                list[dict]: Результат поиска с дополнительной информацией
         """
-        numbers = [i[0] for i in calc_result]
-        additional_data = await self.relational_db.fetch_additional_data({"numbers": numbers})
+
+        additional_data = await self.relational_db.fetch_additional_data(
+            {
+                "numbers": [cr["id"] for cr in calc_result]
+            }
+        )
 
         result = []
         for cr, ad in zip(calc_result, additional_data):
-            if cr[1] < cfg["service"]["threshold"]:
+            if cr["score"] < cfg["service"]["threshold"]:
                 continue
             result.append({
-                "id": str(cr[0]),
-                "score": str(round(cr[1] * 100)) + "%",
+                "id": str(cr["id"]),
+                "score": str(round(cr["score"] * 100)) + "%",
                 "responsible": ad["fio"],
                 "priority": ad["admission_prority"],
-                "registry_date": str(timestamp_to_date(cr[2])),
+                "registry_date": str(timestamp_to_date(cr["registry_date"])),
                 "url": "https://support.naumen.ru/sd/operator/#uuid:%s" % ad["servicecall"]
             })
 
         return result
 
-    @staticmethod
-    def calculation(data_calculation: dict):
-        """
-            Рассчет косинусного расстояния в совокупности
-            с рассчетом значения BM25
-            :input:
-                dict: Данные для вычисления
-            :output:
-                list[tuple]: кортеж с двумя списками, score и № запроса
-        """
-        cosine_scores = np.array(data_calculation["cosine_scores"])  # преобразуем в numpy массив для дальнейших рассчетов
-        bm25 = BM25Okapi(data_calculation["tokenized_querys"])
-
-        # --- Считаем BM25 ---
-        bm25_scores = bm25.get_scores(data_calculation["tokenized_query"])
-
-        # 4. Нормализация и объединение
-        bm25_norm = bm25_scores / (bm25_scores.max() + 1e-9)
-        cosine_norm = cosine_scores / (cosine_scores.max() + 1e-9)
-        hybrid_scores = data_calculation["alpha"] * bm25_norm + (1 - data_calculation["alpha"]) * cosine_norm
-
-        # --- Ранжируем ---
-        return sorted(zip(data_calculation["numbers"], hybrid_scores, data_calculation["reg_dates"]),
-                      key=lambda x: x[1], reverse=True)
-
-    async def search(self, query: str, limit=5, alpha=0.5, exact=True, filters=None):
+    async def search(
+            self,
+            query: str,
+            limit=5,
+            alpha=0.5,
+            exact=True,
+            filters=None
+    ):
         """
             Поиск информации по векторной БД
 
@@ -100,29 +87,15 @@ class SemanticSearchEngine:
         try:
             hits = self.vector_db.fetch_embeddings(embedding, exact, filters)
 
-            calculation_data = {
-                "numbers": [],
-                "cosine_scores": [],
-                "tokenized_querys": [],
-                "tokenized_query": tokenized_query,
-                "reg_dates": [],
-                "alpha": alpha,
-            }
+            ranked = self.scorer(
+                hits=hits.points,
+                query_text=query,
+                alpha=alpha
+            )
 
-            # Формируем данные для вычисления
-            for hit in hits.points:
-                tokens = transforms_bm25(text=hit.payload["text"])["text"].split()
-                log.debug(f"Text tokens: {tokens}")
+            log.info(f'Result qdrant fetching: {ranked}')
 
-                calculation_data["numbers"].append(hit.id)
-                calculation_data["cosine_scores"].append(hit.score)
-                calculation_data["tokenized_querys"].append(tokens)
-                calculation_data["reg_dates"].append(hit.payload["registry_date"])
-
-            calc = self.calculation(calculation_data)
-            log.info(f'Result fetching')
-
-            return await self.generate_result(calc[:limit])
+            return await self.generate_result(ranked[:limit])
         except ZeroDivisionError:
             return {"result": "data not found"}
         except Exception as e:
@@ -131,8 +104,8 @@ class SemanticSearchEngine:
     @staticmethod
     def _extract_date_interval(start_interval: datetime):
         """
-            Вычисление временных интервалов для их использования в запросах
-                Конец интервала - текущая дата и время
+            Вычисление временных интервалов для их использования в запросах на получение данных
+                Конец последнего интервала - текущая дата и время
             :input:
                 datetime: Начальная дата
             :return:
