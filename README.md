@@ -46,8 +46,12 @@ project/
 │   └── search_routes.py     # Скрипт инициализации маршрутов для /search
 │
 ├── service/
-│   └── pipeline.py          # Основной пайплайн обработки запроса
+│   └── search_engine.py     # Поисковой движок
 │   └── logging_config.py    # Конфигурационный python-файл для логирования приложения
+│   └── di.py                # Инициализация классов
+│   └── scorer.py            # Рассчет схожести
+│   └── updater.py           # Обновление данных
+│   └── utils.py             # Вспомогательные методы
 │
 ├── text_processing/                
 │   └── search_routes.py     # Обработка текста
