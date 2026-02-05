@@ -56,7 +56,7 @@ class DataUpdater:
             # Переводим начало в конец предыдущего интервала
             start_interval = batch_end
 
-        log.info(f"Intervals fetching: {intervals}")
+        log.info(f"Intervals fetching, only {len(intervals)} intervals")
         return intervals
 
     async def update(self):
@@ -70,7 +70,8 @@ class DataUpdater:
         date_intervals = self._build_intervals(from_date)
         for date_interval in date_intervals:
 
-            log.info(f"Work at intervals of {date_interval} ...")
+            log.info(f"Work with interval: {date_interval['from_date'].strftime('%Y-%m-%d, %H:%M')} - "
+                     f"{date_interval['to_date'].strftime('%Y-%m-%d, %H:%M')} ...")
             await self.relational_db.fetch_data(date_interval)
             rows = self.relational_db.get_data()
 
