@@ -88,6 +88,27 @@ pip install -r requirements.txt
 docker build -t semantic-search:1.0.0 .
 </pre>
 
+Создать директории
+
+<pre>
+mkdir /opt/searcher
+mkdir /opt/searcher/configs
+mkdir /opt/searcher/qdrant_storage
+mkdir -p /opt/searcher/models/bert
+</pre>
+
+В директорию **/opt/searcher/** положить конфигурационные файлы приложения:
+
+- config.yaml
+- config.py
+
+Cкачать модель и файлы модели из репозитория и переместить их в директорию:
+
+<pre>
+git clone https://huggingface.co/Vades/rubert-tiny2-onnx-optim
+mv .../rubert-tiny2-onnx-optim/bert-onnx-optim/* /opt/searcher/models/bert
+</pre>
+
 Запустить сервисы через docker-compose:
 <pre>
 docker compose up -d --build

@@ -5,7 +5,7 @@ services:
     image: qdrant/qdrant:latest
     container_name: qdrant_db
     volumes:
-      - /opt/search_service/qdrant_storage:/qdrant/storage
+      - /opt/searcher/qdrant_storage:/qdrant/storage
     ports:
       - "6333:6333"
     restart: unless-stopped
@@ -13,10 +13,11 @@ services:
   # application
   search-service:
     image: naumen/support-search:1.0.0
-    container_name: routes-search
+    container_name: searcher
     volumes:
-      - /opt/search_service/config.yaml:/app/config.yaml
-      - /opt/search_service/config.py:/app/config.py
+      - /opt/searcher/configs/config.yaml:/app/config.yaml
+      - /opt/searcher/configs/config.py:/app/config.py
+      - /opt/searcher/models/bert:/app/models/bert
     ports:
       - "5000:5000"
     command: uvicorn app:app --workers 1 --host 0.0.0.0 --port 5000

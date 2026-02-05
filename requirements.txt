@@ -1,7 +1,7 @@
-pandas
+pandas>=2.2.6
 numpy
 
-fastapi
+fastapi>=0.120.1
 
 nltk
 clean-text
@@ -10,18 +10,17 @@ scikit-learn
 
 rank_bm25
 
-torch
-sentence-transformers
-transformers
+sentence-transformers==5.1.2
+transformers==4.55.4
 
-optimum
+optimum==2.0.0
 optimum[onnxruntime]
 
-sqlalchemy
+sqlalchemy==2.0.44
 asyncpg
 
 qdrant-client
 
-uvicorn
+uvicorn>=0.38.0
 
-pyyaml
+pyyaml>=6.0.3
