@@ -3,7 +3,8 @@ from nltk.corpus import stopwords
 from cleantext import clean
 import re
 from natasha import Doc, Segmenter, NewsEmbedding, NewsMorphTagger, MorphVocab
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from typing import List
 
 nltk.download('stopwords')
 sw = set(stopwords.words("russian"))
@@ -59,7 +60,7 @@ class RemoveStopWords:
 class ReplaceText:
     """Замена слов и символов"""
 
-    def __init__(self, replacements):
+    def __init__(self, replacements: List):
         self.replacements = replacements
 
     def __call__(self, text: str):

@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
-from models.model import OnnxSentenseTransformer
-from service.di import model, relational_db, vector_db
+from models.inference_models import OnnxSentenseTransformer
+from service.di import request_embedding, relational_db, vector_db
 from db.database import RelationalDatabaseTouch, VectorDatabaseTouch
 from service.scorer import HybridScorer
 from text_processing.text_preparation import transforms_bm25, transforms_bert
@@ -15,7 +15,7 @@ cfg = Config().data
 
 class SemanticSearchEngine:
     def __init__(self):
-        self.model = model
+        self.request_embedding = request_embedding
         self.relational_db = relational_db
         self.vector_db = vector_db
 
@@ -77,10 +77,7 @@ class SemanticSearchEngine:
         tokenized_query = transforms_bm25(text=query)["text"].split()
         log.debug(f'transforms text for bm25: {tokenized_query}')
 
-        query_bert = transforms_bert(text=query)["text"]
-        log.debug(f'transforms text for NN: {query_bert}')
-
-        embedding = self.model.encode(query_bert)[0]
+        embedding = self.request_embedding.fetch_embedding(query)
         try:
             hits = self.vector_db.fetch_embeddings(embedding, exact, filters)
 

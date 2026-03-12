@@ -1,5 +1,8 @@
 import typing
 import text_processing.TransformsText as TT
+from bs4 import BeautifulSoup
+import re
+from typing import List
 
 
 transforms_bm25 = TT.TextCompose([
@@ -53,6 +56,20 @@ transforms_bert = TT.TextCompose([
     ]),
 ])
 
+transforms_comments = TT.TextCompose([
+    TT.ReplaceText([
+                    (r'в работе', ''),
+                    (r'запрос в работе', ''),
+                    (r'отложен до.*', ''),
+                    (r'т\.к\.', ''),
+                    (r'отложенная заявка автоматически.*', ''),
+                    (r'<b>#### статус изменился.*', ''),
+                    (r'####.*', ''),
+                    (r'данный запрос находится в состоянии.*', ''),
+                    (r'необходимо классифицировать запрос', ''),
+                    (r'категория назначена', ''),
+    ])
+])
 
 def preparation_list(texts: list[str]) -> tuple[list[list[str]], list[str]]:
     """Подготавливает тексты для BM25 и BERT-моделей.
@@ -83,4 +100,48 @@ def preparation_str(text: str) -> tuple[list[str], str]:
     """
     tokens_bm25 = transforms_bm25(text=text)["text"].split()
     text_bert = transforms_bert(text=text)["text"]
+
     return tokens_bm25, text_bert
+
+
+def strip_html(text: str) -> str:
+    return re.compile(r'<[^>]+>').sub(' ', text)
+
+
+def normalize_whitespace(text: str) -> str:
+    return re.compile(r'\s+').sub(' ', text).strip()
+
+
+def clean_comment_block(text: str) -> str:
+    text = text.lower()
+
+    text = transforms_comments(text=text)["text"]
+
+    if "<" in text and ">" in text:
+        text = strip_html(text)
+
+    text = normalize_whitespace(text)
+
+    return text
+
+
+def clean_comments(raw_text: str) -> str:
+
+    if not raw_text:
+        return ""
+
+    blocks: List[str] = [block.strip() for block in raw_text.split("|||")]
+
+    cleaned_blocks = []
+
+    for block in blocks:
+
+        if not block:
+            continue
+
+        cleaned = clean_comment_block(block)
+
+        if cleaned:
+            cleaned_blocks.append(cleaned)
+
+    return "\n".join(cleaned_blocks)

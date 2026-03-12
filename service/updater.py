@@ -1,6 +1,6 @@
 # service/updater.py
 import asyncio
-from service.di import model, relational_db, vector_db
+from service.di import request_embedding, relational_db, vector_db
 from text_processing.text_preparation import transforms_bert
 from datetime import datetime, timedelta
 import logging
@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 
 class DataUpdater:
     def __init__(self):
-        self.model = model
+        self.request_embedding = request_embedding
         self.relational_db = relational_db
         self.vector_db = vector_db
 
@@ -22,6 +22,7 @@ class DataUpdater:
             log.info("Initial update finished")
         except Exception:
             log.exception("Initial update failed")
+            raise
 
         # Дальше — по расписанию
         await self.background_updater()
@@ -76,12 +77,14 @@ class DataUpdater:
             rows = self.relational_db.get_data()
 
             for row in rows:
-                log.debug(f"Text for preparation {row['problem']}")
-                text_bert = transforms_bert(text=row["problem"])["text"]
-                row["embedding"] = self.model.encode(text_bert)[0]
+                log.debug(f"Problem {row['problem']}\nComments: {row['comments']}")
+                row["embedding"] = self.request_embedding.fetch_embedding(
+                    row['problem'],
+                    row['comments']
+                )
                 row["registry_date"] = row["registry_date"].timestamp()
 
-            self.vector_db.save_embeddings(rows)
+            self.vector_db.save_embeddings(rows)  # TODO  Убрать два последовательных цикла
 
             log.info("Interval work completed")
 

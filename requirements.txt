@@ -24,3 +24,7 @@ qdrant-client
 uvicorn>=0.38.0
 
 pyyaml>=6.0.3
+
+accelerate==1.13.0
+
+bs4==0.0.2
