@@ -1,7 +1,7 @@
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from datetime import datetime
-
+from typing import List
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, PointStruct, Distance, \
     HnswConfigDiff, SearchParams
@@ -20,8 +20,8 @@ def load_query(path: str) -> str:
 
 
 class RelationalDatabaseTouch:
-    def __init__(self):
-        engine = create_async_engine(cfg["database"]["relational_db"]["url"])
+    def __init__(self, url):
+        engine = create_async_engine(url)
         self.Session = async_sessionmaker(bind=engine)
         self.additional_data_query = text(load_query("db/queries/additional_data.sql"))
         self.requests = {}
@@ -76,18 +76,25 @@ class RelationalDatabaseTouch:
 
 
 class VectorDatabaseTouch:
-    def __init__(self):
-        self.qdrant_config = cfg["database"]["vector_db"]
+    def __init__(
+            self,
+            url,
+            collection_name,
+            date_from,
+            qdrant_config
+    ):
+        self.qdrant_config = qdrant_config
         # Подключаемся к Qdrant
-        self.qdrant_client = QdrantClient(self.qdrant_config["main"]["url"])
-        self.collection_name = self.qdrant_config["main"]["collection_name"]
+        self.qdrant_client = QdrantClient(url)
+        self.collection_name = collection_name
         self.vector_size = 312  # размер эмбеддинга
         self.distance = Distance.COSINE  # метрика
         self.points_count = 0
         self.metadata = {}
         self.date_last_record = datetime.strptime(
-            self.qdrant_config["main"]["date_from"],
-            "%Y-%m-%d").timestamp()
+            date_from,
+            "%Y-%m-%d"
+        ).timestamp()
         self.initialize()
 
     def init_db(self):
@@ -98,27 +105,27 @@ class VectorDatabaseTouch:
             collection_name=self.collection_name,
             vectors_config=VectorParams(size=self.vector_size, distance=self.distance),
             hnsw_config=HnswConfigDiff(
-                m=self.qdrant_config["indexing"]["m_value"],
-                ef_construct=self.qdrant_config["indexing"]["ef_construct"],
-                full_scan_threshold=self.qdrant_config["indexing"]["full_scan_threshold"],
-                max_indexing_threads=self.qdrant_config["indexing"]["max_indexing_threads"],
-                on_disk=self.qdrant_config["indexing"]["on_disk"],
+                m=self.qdrant_config["m_value"],
+                ef_construct=self.qdrant_config["ef_construct"],
+                full_scan_threshold=self.qdrant_config["full_scan_threshold"],
+                max_indexing_threads=self.qdrant_config["max_indexing_threads"],
+                on_disk=self.qdrant_config["on_disk"],
             )
         )
 
     def initialize(self):
         # Проверяем, существует ли коллекция
-        if not self.qdrant_client.collection_exists(self.collection_name):
-            log.info(f"Collection '{self.collection_name}' not found")
-            self.init_db()
-        else:
+        if self.qdrant_client.collection_exists(self.collection_name):
             self.points_count = self._fetch_existing_points_count()
             self._update_metadata()
             log.info(f"Collection '{self.collection_name}' found, "
                      f"count points - {self.points_count}, "
                      f"date last point - {self.get_date_last_record()}")
+        else:
+            log.info(f"Collection '{self.collection_name}' not found")
+            self.init_db()
 
-    def save_embeddings(self, rows: dict):
+    def save_embeddings(self, points: List):
         """
             Формируем записи для Qdrant и сохраняем
             :input:
@@ -126,26 +133,12 @@ class VectorDatabaseTouch:
         """
         log.info("Save data in vector db ...")
         try:
-            points = [
-                PointStruct(
-                    id=int(row["number"]),
-                    vector=row["embedding"],
-                    payload={
-                        "text": row["problem"],
-                        "client": row["client"],
-                        "product": row["product"],
-                        "registry_date": row["registry_date"]
-                    }
-                )
-                for row in rows
-            ]
-
             # Сохраняем в Qdrant
             self.qdrant_client.upsert(
                 collection_name=self.collection_name,
                 points=points
             )
-            self.points_count = self.points_count + len(rows)  # Актуализируем количество точек
+            self.points_count = self.points_count + len(points)  # Актуализируем количество точек
             self._update_metadata()  # Актуализируем метаданные
             log.info(f"✅ Embedding successfully saved in vector db. Date for next update {self.get_date_last_record()}")
         except Exception as e:

@@ -1,8 +1,10 @@
 # service/updater.py
 import asyncio
-from service.di import request_embedding, relational_db, vector_db
+from service.di import Container
 from text_processing.text_preparation import transforms_bert
+from qdrant_client.models import PointStruct
 from datetime import datetime, timedelta
+from collections import defaultdict
 import logging
 
 log = logging.getLogger(__name__)
@@ -10,9 +12,14 @@ log = logging.getLogger(__name__)
 
 class DataUpdater:
     def __init__(self):
-        self.request_embedding = request_embedding
-        self.relational_db = relational_db
-        self.vector_db = vector_db
+
+        self.container = Container()
+
+        # Берем последнюю запись среди всех коллекций
+        self.date_from = max(
+            vector_db.date_last_record
+            for vector_db in self.container.vector_dbs.values()
+        )
 
     async def run(self):
         # Первый запуск — сразу
@@ -67,24 +74,41 @@ class DataUpdater:
 
         log.info("Request for data ...")
 
-        from_date = self.vector_db.get_date_last_record()
-        date_intervals = self._build_intervals(from_date)
+        date_intervals = self._build_intervals(self.date_from)
         for date_interval in date_intervals:
 
             log.info(f"Work with interval: {date_interval['from_date'].strftime('%Y-%m-%d, %H:%M')} - "
                      f"{date_interval['to_date'].strftime('%Y-%m-%d, %H:%M')} ...")
-            await self.relational_db.fetch_data(date_interval)
-            rows = self.relational_db.get_data()
+            await self.container.relational_db.fetch_data(date_interval)
 
-            for row in rows:
+            # TODO  Можно вынести в отдельную функцию формирование точек
+            product_points = defaultdict(list)
+            for row in self.container.relational_db.get_data():
                 log.debug(f"Problem {row['problem']}\nComments: {row['comments']}")
-                row["embedding"] = self.request_embedding.fetch_embedding(
-                    row['problem'],
-                    row['comments']
-                )
-                row["registry_date"] = row["registry_date"].timestamp()
 
-            self.vector_db.save_embeddings(rows)  # TODO  Убрать два последовательных цикла
+                # Формируем точки для сохранения в каждой коллекции
+                product_points[row["product"]].append(
+                    PointStruct(
+                        id=int(row["number"]),
+                        vector=self.container.request_embedding.fetch_embedding(
+                            row['problem'],
+                            row['comments']
+                        ),
+                        payload={
+                            "text": row["problem"],
+                            "client": row["client"],
+                            "product": row["product"],
+                            "registry_date": row["registry_date"].timestamp()
+                        }
+                    )
+                )
+
+            for product, points_for_product in product_points.items():
+
+                # получаем объект VectorDatabaseTouch для этой коллекции
+                vector_db = self.container.vector_dbs[product]
+                vector_db.save_embeddings(points_for_product)
+                log.info(f"Saved {len(points_for_product)} points to collection '{product}'")
 
             log.info("Interval work completed")
 
