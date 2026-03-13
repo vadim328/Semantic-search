@@ -1,5 +1,5 @@
 select
-	req.number as id,
+	req.number,
 	req.client,
     c.product,
     req.date_end,

@@ -19,7 +19,7 @@ class DataUpdater:
 
         # Берем последнюю запись среди всех коллекций
         self.date_from = max(
-            vector_db.date_last_record
+            vector_db.get_date_last_record()
             for vector_db in self.container.vector_dbs.values()
         )
 
@@ -84,7 +84,7 @@ class DataUpdater:
 
             vector_db.save_embeddings(points)
 
-            log.info(f"Saved {len(points)} points to collection '{product}'")
+            log.info(f"Saved {len(points)} points to product '{product}'")
 
     def _get_embedding(self, row: dict):
         """
@@ -106,7 +106,7 @@ class DataUpdater:
 
         return self.container.embedding_model.encode(text)
 
-    def _build_points(self, rows: List) -> dict:
+    def _build_points(self, rows: List[dict]) -> dict:
         """
             Преобразование полученных строк из реляционной БД
             в нужный формат для сохранения в векторную БД

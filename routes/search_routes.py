@@ -3,9 +3,11 @@ from typing import List
 from fastapi import APIRouter, Request, HTTPException
 from service.search_engine import SemanticSearchEngine
 from fastapi.responses import JSONResponse
+from config import Config
 import logging
 
 log = logging.getLogger(__name__)
+cfg = Config().data
 
 
 def validate_params(params: dict, req_params: List):
@@ -21,7 +23,14 @@ def create_search_router(searcher: SemanticSearchEngine) -> APIRouter:
 
     router = APIRouter(prefix="/search", tags=["Search"])
 
-    @router.get("/options")
+    @router.get("/options/products")
+    def get_metadata():
+        """
+            GET - метод для получения списка проудктов и клиентов
+        """
+        return cfg["service"]["products"]
+
+    @router.get("/options/clients")
     def get_metadata(product):
         """
             GET - метод для получения списка проудктов и клиентов

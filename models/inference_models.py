@@ -29,7 +29,7 @@ class EmbeddingModel:
             :output:
                 list: список полученных эмбеддингов
         """
-        log.debug(f"Data: {texts}")
+        log.debug(f"Text for fetch embedding:\n{texts}")
         if isinstance(texts, str):
             texts = [texts]
         all_embeddings = []

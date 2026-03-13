@@ -2,7 +2,9 @@
 from db.database import RelationalDatabaseTouch, VectorDatabaseTouch
 from models.inference_models import EmbeddingModel, LLMModel
 from config import Config
+import logging
 
+log = logging.getLogger(__name__)
 cfg = Config().data
 
 
@@ -13,17 +15,22 @@ class Container:
     """
     def __init__(self):
 
+        log.info("Load LLM models")
         self.llm_models = self._build_llm_models()
+        log.info("LLM models is load")
 
+        log.info("Load embedding model")
         self.embedding_model = EmbeddingModel(
             cfg["models"]["embedding"]["path"],
             cfg["models"]["embedding"]["model_name"]
         )
+        log.info("Embedding model is load")
 
         self.relational_db = RelationalDatabaseTouch(
             cfg["database"]["relational_db"]["url"]
         )
 
+        log.info("Init vector db")
         self.vector_dbs = self._build_vector_dbs()
 
     @staticmethod
@@ -33,10 +40,10 @@ class Container:
 
         return {
             name: VectorDatabaseTouch(
-                vector_cfg["url"],
-                vector_cfg["date_from"],
-                collection_cfg["name"],
-                collection_cfg["indexing"]
+                url=vector_cfg["url"],
+                collection_name=collection_cfg["name"],
+                date_from=vector_cfg["date_from"],
+                qdrant_config=collection_cfg["indexing"]
             )
             for name, collection_cfg in vector_cfg["collections"].items()
         }
@@ -47,7 +54,7 @@ class Container:
         llm_cfg = cfg["models"]["llm"]
 
         return {
-            name: LLMModel(path["path"])
+            name: LLMModel(model_path=path["path"])
             for name, path in llm_cfg.items()
         }
 

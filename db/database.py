@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, \
-    HnswConfigDiff, SearchParams
+    HnswConfigDiff, SearchParams, PointStruct
 from qdrant_client.http import models
 import logging
 from config import Config
@@ -83,39 +83,39 @@ class VectorDatabaseTouch:
             date_from,
             qdrant_config
     ):
-        self.qdrant_config = qdrant_config
+        self._qdrant_config = qdrant_config
         # Подключаемся к Qdrant
-        self.qdrant_client = QdrantClient(url)
+        self._qdrant_client = QdrantClient(url)
         self.collection_name = collection_name
-        self.vector_size = 312  # размер эмбеддинга
-        self.distance = Distance.COSINE  # метрика
-        self.points_count = 0
-        self.metadata = {}
-        self.date_last_record = datetime.strptime(
+        self._vector_size = 312  # размер эмбеддинга
+        self._distance = Distance.COSINE  # метрика
+        self._points_count = 0
+        self._metadata = {}
+        self._date_last_record = datetime.strptime(
             date_from,
             "%Y-%m-%d"
         ).timestamp()
-        self.initialize()
+        self._initialize()
 
     def init_db(self):
         """Создание новой коллекции"""
 
-        log.info(f"create new collection, collection name - {self.collection_name}")
-        self.qdrant_client.create_collection(
+        log.info(f"create new collection, collection name - '{self.collection_name}'")
+        self._qdrant_client.create_collection(
             collection_name=self.collection_name,
-            vectors_config=VectorParams(size=self.vector_size, distance=self.distance),
+            vectors_config=VectorParams(size=self._vector_size, distance=self._distance),
             hnsw_config=HnswConfigDiff(
-                m=self.qdrant_config["m_value"],
-                ef_construct=self.qdrant_config["ef_construct"],
-                full_scan_threshold=self.qdrant_config["full_scan_threshold"],
-                max_indexing_threads=self.qdrant_config["max_indexing_threads"],
-                on_disk=self.qdrant_config["on_disk"],
+                m=self._qdrant_config["m_value"],
+                ef_construct=self._qdrant_config["ef_construct"],
+                full_scan_threshold=self._qdrant_config["full_scan_threshold"],
+                max_indexing_threads=self._qdrant_config["max_indexing_threads"],
+                on_disk=self._qdrant_config["on_disk"],
             )
         )
 
-    def initialize(self):
+    def _initialize(self):
         # Проверяем, существует ли коллекция
-        if self.qdrant_client.collection_exists(self.collection_name):
+        if self._qdrant_client.collection_exists(self.collection_name):
             self.points_count = self._fetch_existing_points_count()
             self._update_metadata()
             log.info(f"Collection '{self.collection_name}' found, "
@@ -125,24 +125,27 @@ class VectorDatabaseTouch:
             log.info(f"Collection '{self.collection_name}' not found")
             self.init_db()
 
-    def save_embeddings(self, points: List):
+    def save_embeddings(self, points: List[PointStruct]):
         """
             Формируем записи для Qdrant и сохраняем
             :input:
                 dict: Словарь с данными из реляционной БД
         """
-        log.info("Save data in vector db ...")
+        log.info(f"Saving data to a collection {self.collection_name}")
         try:
             # Сохраняем в Qdrant
-            self.qdrant_client.upsert(
+            self._qdrant_client.upsert(
                 collection_name=self.collection_name,
                 points=points
             )
-            self.points_count = self.points_count + len(points)  # Актуализируем количество точек
+            self._points_count = self._points_count + len(points)  # Актуализируем количество точек
             self._update_metadata()  # Актуализируем метаданные
-            log.info(f"✅ Embedding successfully saved in vector db. Date for next update {self.get_date_last_record()}")
+            log.info(
+                f"✅ Embedding successfully saved in collection '{self.collection_name}'. "
+                f"Date for next update {self.get_date_last_record()}"
+            )
         except Exception as e:
-            log.info(f"Embedding unsuccessfully saved in vector db. Error: {e}")
+            log.error(f"Embedding unsuccessfully saved in collection '{self.collection_name}'. Error: {e}")
             log.info(f"Date for next update {self.get_date_last_record()}")
 
     @staticmethod
@@ -203,11 +206,11 @@ class VectorDatabaseTouch:
             return:
                 custom qdrant class: результат поиска по векторной БД
         """
-        log.info("Fetch embeddings from vector db ...")
+        log.info(f"Attempt fetch embeddings from collections {self.collection_name}")
 
         # Добавляем фильтр
         query_filter = self._build_filter(filters)
-        hits = self.qdrant_client.query_points(
+        hits = self._qdrant_client.query_points(
             collection_name=self.collection_name,
             query=embedding,
             limit=self.points_count if exact else 500,  # Находим все точки, если не быстрый поиск
@@ -226,7 +229,7 @@ class VectorDatabaseTouch:
             :output:
                 int: Количество точек в коллекции
         """
-        info = self.qdrant_client.get_collection(collection_name=self.collection_name)
+        info = self._qdrant_client.get_collection(collection_name=self.collection_name)
         return info.points_count or 0  # актуальное количество точек
 
     def _update_metadata(self):
@@ -236,13 +239,13 @@ class VectorDatabaseTouch:
             чтоб не проходить по всем точкам каждый раз.
         """
         offset = None
-        clients = self.metadata.get("clients", set())
+        clients = self._metadata.get("clients", set())
         scroll_filter = self._build_filter({
-            "date_from": self.date_last_record
+            "date_from": self._date_last_record
         })
         # Получаем все записи коллекции по 1000, чтоб не нагружать RAM
         while True:
-            scroll_result = self.qdrant_client.scroll(
+            scroll_result = self._qdrant_client.scroll(
                 collection_name=self.collection_name,
                 limit=1000,
                 scroll_filter=scroll_filter,
@@ -274,7 +277,7 @@ class VectorDatabaseTouch:
             :output:
                 datetime: дата последней записи в переменной
         """
-        return datetime.fromtimestamp(self.date_last_record)
+        return datetime.fromtimestamp(self._date_last_record)
 
     def get_metadata(self):
         """
@@ -282,4 +285,4 @@ class VectorDatabaseTouch:
             :output:
                 dict: метаданные
         """
-        return self.metadata
+        return self._metadata

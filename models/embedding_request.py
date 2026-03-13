@@ -51,10 +51,9 @@ def fetch_embedding(
 
     try:
         summary = summarize(llm_model, problem, comments)
-        log.info(f"Summary request: {summary}")
+        log.debug(f"Result of summarization:\n{summary}")
 
         log.debug("Encoding summary")
-
         return embedding_model.encode(summary)[0]
 
     except Exception:

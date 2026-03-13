@@ -1,7 +1,6 @@
 import asyncio
-from datetime import datetime, timedelta
+#from datetime import datetime, timedelta
 from service.di import container
-from db.database import RelationalDatabaseTouch, VectorDatabaseTouch
 from models.embedding_request import fetch_embedding
 from service.scorer import HybridScorer
 from text_processing.text_preparation import transforms_bm25, transforms_bert
@@ -124,4 +123,7 @@ class SemanticSearchEngine:
                 :output:
                     dict: метаданные
         """
-        return self.container.vector_dbs[product].get_metadata()
+        log.debug(f"Metadata for the '{product}' product was requested")
+        res = self.container.vector_dbs[product].get_metadata()
+        log.debug(f"Metadata {res}")
+        return res
