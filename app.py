@@ -47,10 +47,10 @@ async def root():
     return {"Status": "OK"}
 
 
-@app.get('/find/{query}')
+'''@app.get('/find/{query}')
 async def return_formulation(query: str):
     """
         GET - метод. Поиск запросов по тексту
     """
     log.info(f"Requested: {query}")
-    return searcher.search(query)
+    return searcher.search(query)'''

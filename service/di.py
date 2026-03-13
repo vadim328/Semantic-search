@@ -1,6 +1,5 @@
 # services/di.py
 from db.database import RelationalDatabaseTouch, VectorDatabaseTouch
-from models.request_embedding_service import RequestEmbedding
 from models.inference_models import EmbeddingModel, LLMModel
 from config import Config
 
@@ -8,16 +7,18 @@ cfg = Config().data
 
 
 class Container:
-
+    """
+        Класс для инициализации объектов,
+        необходимых для работы сервиса
+    """
     def __init__(self):
 
-        self.llm_model = LLMModel(cfg["models"]["llm"]["path"])
+        self.llm_models = self._build_llm_models()
+
         self.embedding_model = EmbeddingModel(
             cfg["models"]["embedding"]["path"],
             cfg["models"]["embedding"]["model_name"]
         )
-
-        self.request_embedding = RequestEmbedding(self.llm_model, self.embedding_model)
 
         self.relational_db = RelationalDatabaseTouch(
             cfg["database"]["relational_db"]["url"]
@@ -25,7 +26,8 @@ class Container:
 
         self.vector_dbs = self._build_vector_dbs()
 
-    def _build_vector_dbs(self):
+    @staticmethod
+    def _build_vector_dbs():
 
         vector_cfg = cfg["database"]["vector_db"]
 
@@ -38,3 +40,16 @@ class Container:
             )
             for name, collection_cfg in vector_cfg["collections"].items()
         }
+
+    @staticmethod
+    def _build_llm_models():
+
+        llm_cfg = cfg["models"]["llm"]
+
+        return {
+            name: LLMModel(path["path"])
+            for name, path in llm_cfg.items()
+        }
+
+
+container = Container()

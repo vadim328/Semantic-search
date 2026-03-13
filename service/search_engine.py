@@ -1,8 +1,8 @@
 import asyncio
 from datetime import datetime, timedelta
-from models.inference_models import OnnxSentenseTransformer
-from service.di import request_embedding, relational_db, vector_db
+from service.di import container
 from db.database import RelationalDatabaseTouch, VectorDatabaseTouch
+from models.embedding_request import fetch_embedding
 from service.scorer import HybridScorer
 from text_processing.text_preparation import transforms_bm25, transforms_bert
 from service.utils import timestamp_to_date
@@ -15,10 +15,7 @@ cfg = Config().data
 
 class SemanticSearchEngine:
     def __init__(self):
-        self.request_embedding = request_embedding
-        self.relational_db = relational_db
-        self.vector_db = vector_db
-
+        self.container = container
         self.scorer = HybridScorer()
 
     async def generate_result(self, calc_result: list[dict]):
@@ -30,7 +27,7 @@ class SemanticSearchEngine:
                 list[dict]: Результат поиска с дополнительной информацией
         """
 
-        additional_data = await self.relational_db.fetch_additional_data(
+        additional_data = await self.container.relational_db.fetch_additional_data(
             {
                 "numbers": [cr["id"] for cr in calc_result]
             }
@@ -51,9 +48,30 @@ class SemanticSearchEngine:
 
         return result
 
+    def _get_embedding(self, product: str, problem: str):
+        # Временная функция
+        """
+            Метод для получения эмбеддинга запроса
+                input:
+                    row - запись с полями
+                output:
+                    vector - эмбеддинг запроса
+        """
+        if product == "Naumen Erudite":
+            return fetch_embedding(
+                self.container.llm_models[product],
+                self.container.embedding_model,
+                problem,
+            )
+
+        text = transforms_bert(text=problem)["text"]
+
+        return self.container.embedding_model.encode(text)
+
     async def search(
             self,
             query: str,
+            product: str,
             limit=5,
             alpha=0.5,
             exact=True,
@@ -77,9 +95,14 @@ class SemanticSearchEngine:
         tokenized_query = transforms_bm25(text=query)["text"].split()
         log.debug(f'transforms text for bm25: {tokenized_query}')
 
-        embedding = self.request_embedding.fetch_embedding(query)
+        embedding = self._get_embedding(product, query)
         try:
-            hits = self.vector_db.fetch_embeddings(embedding, exact, filters)
+            # Получаем эмбеддинги из нужной коллекции в взависимости от продукта
+            hits = self.container.vector_dbs[product].fetch_embeddings(
+                embedding,
+                exact,
+                filters
+            )
 
             ranked = self.scorer(
                 hits=hits.points,
@@ -95,10 +118,10 @@ class SemanticSearchEngine:
         except Exception as e:
             log.error(f"Error: {e}")
 
-    def get_metadata(self):
+    def get_metadata(self, product):
         """
             Формирует и передает метаданные
                 :output:
                     dict: метаданные
         """
-        return self.vector_db.get_metadata()
+        return self.container.vector_dbs[product].get_metadata()

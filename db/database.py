@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from datetime import datetime
 from typing import List
 from qdrant_client import QdrantClient
-from qdrant_client.models import VectorParams, PointStruct, Distance, \
+from qdrant_client.models import VectorParams, Distance, \
     HnswConfigDiff, SearchParams
 from qdrant_client.http import models
 import logging
@@ -237,7 +237,6 @@ class VectorDatabaseTouch:
         """
         offset = None
         clients = self.metadata.get("clients", set())
-        products = self.metadata.get("products", set())
         scroll_filter = self._build_filter({
             "date_from": self.date_last_record
         })
@@ -256,11 +255,10 @@ class VectorDatabaseTouch:
             # Проходимся по каждой записи
             for p in points:
                 clients.add(p.payload["client"])
-                products.add(p.payload["product"])
 
                 # Ищем последнюю дату
-                if p.payload["registry_date"] > self.date_last_record:
-                    self.date_last_record = p.payload["registry_date"]
+                if p.payload["date_end"] > self.date_last_record:
+                    self.date_last_record = p.payload["date_end"]
 
             offset = scroll_result[1]
             if offset is None:
@@ -268,7 +266,6 @@ class VectorDatabaseTouch:
 
         self.metadata = {
             "clients": clients,
-            "products": products,
         }
 
     def get_date_last_record(self):
