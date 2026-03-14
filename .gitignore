@@ -6,3 +6,4 @@ test.py
 /models/onnx/*
 /models/Liquid/*
 config.yaml
+*test.sql

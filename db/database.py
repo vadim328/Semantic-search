@@ -48,7 +48,7 @@ class RelationalDatabaseTouch:
             :input:
                 dict: Параметры запроса
         """
-        query = text(load_query("db/queries/fetch_requests.sql"))
+        query = text(load_query("db/queries/test.sql")) #####
         self.requests = await self.make_request(query, params)
         log.info(f"Data received from relational db, count rows - {len(self.requests)}")
 
@@ -171,7 +171,7 @@ class VectorDatabaseTouch:
                     value = datetime.strptime(value, "%Y-%m-%d").timestamp()
                 conditions.append(
                     models.FieldCondition(
-                        key="registry_date",
+                        key="date_end",
                         range=models.Range(gte=value)
                     )
                 )
@@ -180,7 +180,7 @@ class VectorDatabaseTouch:
                     value = datetime.strptime(value, "%Y-%m-%d").timestamp()
                 conditions.append(
                     models.FieldCondition(
-                        key="registry_date",
+                        key="date_end",
                         range=models.Range(lte=value)
                     )
                 )
@@ -220,7 +220,7 @@ class VectorDatabaseTouch:
                 hnsw_ef=512   # Количество кандидатов для рассмотерния
             ),
         )
-        log.info("✅ Embedding received successfully")
+        log.info("✅ Embeddings received successfully")
         return hits
 
     def _fetch_existing_points_count(self):
@@ -238,6 +238,7 @@ class VectorDatabaseTouch:
             Для ускорения добавлен фильтр даты последней записи,
             чтоб не проходить по всем точкам каждый раз.
         """
+        log.info(f"Update metadata for collection {self.collection_name}")
         offset = None
         clients = self._metadata.get("clients", set())
         scroll_filter = self._build_filter({
@@ -257,17 +258,18 @@ class VectorDatabaseTouch:
 
             # Проходимся по каждой записи
             for p in points:
+                log.debug(f"add client {p.payload['client']}")
                 clients.add(p.payload["client"])
 
                 # Ищем последнюю дату
-                if p.payload["date_end"] > self.date_last_record:
-                    self.date_last_record = p.payload["date_end"]
+                if p.payload["date_end"] > self._date_last_record:
+                    self._date_last_record = p.payload["date_end"]
 
             offset = scroll_result[1]
             if offset is None:
                 break
 
-        self.metadata = {
+        self._metadata = {
             "clients": clients,
         }
 

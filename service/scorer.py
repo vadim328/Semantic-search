@@ -53,7 +53,7 @@ class HybridScorer:
             results.append({
                 "id": hit.id,
                 "score": float(score),
-                "registry_date": hit.payload.get("registry_date"),
+                "date_end": hit.payload.get("date_end"),
             })
 
         return sorted(results, key=lambda x: x["score"], reverse=True)

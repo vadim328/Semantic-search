@@ -1,5 +1,4 @@
 import torch
-from abc import ABC, abstractmethod
 from optimum.onnxruntime import ORTModelForFeatureExtraction
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import numpy as np
@@ -60,7 +59,7 @@ class LLMModel:
             torch_dtype="bfloat16",
         )
 
-        self.tokenizer = AutoTokenizer.from_pretrained("LiquidAI/LFM2-350M")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path + "tokenizer/")
 
     def generate(self, prompt, max_tokens=512):
 

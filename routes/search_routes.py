@@ -24,13 +24,13 @@ def create_search_router(searcher: SemanticSearchEngine) -> APIRouter:
     router = APIRouter(prefix="/search", tags=["Search"])
 
     @router.get("/options/products")
-    def get_metadata():
+    def get_products():
         """
             GET - метод для получения списка проудктов и клиентов
         """
         return cfg["service"]["products"]
 
-    @router.get("/options/clients")
+    @router.get("/options/metadata")
     def get_metadata(product):
         """
             GET - метод для получения списка проудктов и клиентов

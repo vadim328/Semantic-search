@@ -16,6 +16,7 @@ class SemanticSearchEngine:
     def __init__(self):
         self.container = container
         self.scorer = HybridScorer()
+        self.threshold = cfg["service"]["threshold"]
 
     async def generate_result(self, calc_result: list[dict]):
         """
@@ -34,14 +35,14 @@ class SemanticSearchEngine:
 
         result = []
         for cr, ad in zip(calc_result, additional_data):
-            if cr["score"] < cfg["service"]["threshold"]:
+            if cr["score"] < self.threshold:
                 continue
             result.append({
                 "id": str(cr["id"]),
                 "score": str(round(cr["score"] * 100)) + "%",
                 "responsible": ad["fio"],
                 "priority": ad["admission_prority"],
-                "registry_date": str(timestamp_to_date(cr["registry_date"])),
+                "date_end": str(timestamp_to_date(cr["date_end"])),
                 "url": "https://support.naumen.ru/sd/operator/#uuid:%s" % ad["servicecall"]
             })
 

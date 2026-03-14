@@ -253,8 +253,9 @@ productSelect.addEventListener("change", async () => {
   if (!product) return;
 
   try {
-    const res = await fetch(`/search/options/clients?product=${encodeURIComponent(product)}`);
-    const clients = await res.json();
+    const res = await fetch(`/search/options/metadata?product=${encodeURIComponent(product)}`);
+    const data = await res.json();
+    const clients = data.clients;
 
     clients.forEach(c => {
       const opt = document.createElement("option");
@@ -264,7 +265,7 @@ productSelect.addEventListener("change", async () => {
     });
 
   } catch (e) {
-    console.error("Ошибка загрузки клиентов:", e);
+    console.error("Ошибка загрузки метаданных:", e);
   }
 
 });
