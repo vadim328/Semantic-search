@@ -1,9 +1,7 @@
-import asyncio
-#from datetime import datetime, timedelta
 from service.di import container
 from models.embedding_request import fetch_embedding
 from service.scorer import HybridScorer
-from text_processing.text_preparation import transforms_bm25, transforms_bert
+from text_processing.text_preparation import transforms_bert
 from service.utils import timestamp_to_date
 import logging
 from config import Config
@@ -57,7 +55,7 @@ class SemanticSearchEngine:
                 output:
                     vector - эмбеддинг запроса
         """
-        if product == "Naumen Erudite":
+        if product == "Naumen":
             return fetch_embedding(
                 self.container.llm_models[product],
                 self.container.embedding_model,
@@ -66,7 +64,7 @@ class SemanticSearchEngine:
 
         text = transforms_bert(text=problem)["text"]
 
-        return self.container.embedding_model.encode(text)
+        return self.container.embedding_model.encode(text)[0]
 
     async def search(
             self,
@@ -91,14 +89,11 @@ class SemanticSearchEngine:
         """
         if filters is None:
             filters = {}
-        # Для поиска по ключевым словам лучше увеличить альфу
-        tokenized_query = transforms_bm25(text=query)["text"].split()
-        log.debug(f'transforms text for bm25: {tokenized_query}')
 
         embedding = self._get_embedding(product, query)
         try:
             # Получаем эмбеддинги из нужной коллекции в взависимости от продукта
-            hits = self.container.vector_dbs[product].fetch_embeddings(
+            hits = self.container.vector_db.collection(product).fetch_embeddings(
                 embedding,
                 exact,
                 filters
@@ -110,7 +105,7 @@ class SemanticSearchEngine:
                 alpha=alpha
             )
 
-            log.info(f'Result qdrant fetching: {ranked}')
+            log.info(f'Result searching: {ranked}')
 
             return await self.generate_result(ranked[:limit])
         except ZeroDivisionError:
@@ -125,6 +120,6 @@ class SemanticSearchEngine:
                     dict: метаданные
         """
         log.debug(f"Metadata for the '{product}' product was requested")
-        res = self.container.vector_dbs[product].get_metadata()
+        res = self.container.vector_db.collection(product).metadata()
         log.debug(f"Metadata {res}")
         return res

@@ -18,9 +18,11 @@ class DataUpdater:
         self.container = container
 
         # Берем последнюю запись среди всех коллекций
-        self.date_from = max(
-            vector_db.get_date_last_record()
-            for vector_db in self.container.vector_dbs.values()
+        self.date_from = datetime.fromtimestamp(
+            max(
+                collection.metadata()["date_last_record"]
+                for collection in self.container.vector_db.collections().values()
+            )
         )
 
     async def run(self):
@@ -80,7 +82,7 @@ class DataUpdater:
                 input: product_points - словарь с данными в формате PointStruct по продуктам,
         """
         for product, points in product_points.items():
-            vector_db = self.container.vector_dbs[product]
+            vector_db = self.container.vector_db.collection(product)
 
             vector_db.save_embeddings(points)
 
@@ -94,7 +96,7 @@ class DataUpdater:
                 output:
                     vector - эмбеддинг запроса
         """
-        if row["product"] == "Naumen Erudite":
+        if row["product"] == "Naumen":
             return fetch_embedding(
                 self.container.llm_models[row["product"]],
                 self.container.embedding_model,
@@ -104,7 +106,7 @@ class DataUpdater:
 
         text = transforms_bert(text=row["problem"])["text"]
 
-        return self.container.embedding_model.encode(text)
+        return self.container.embedding_model.encode(text)[0]
 
     def _build_points(self, rows: List[dict]) -> dict:
         """

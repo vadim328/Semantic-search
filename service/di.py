@@ -1,5 +1,6 @@
 # services/di.py
-from db.database import RelationalDatabaseTouch, VectorDatabaseTouch
+from db.relational_db.relational_db import RelationalDatabaseTouch
+from db.vector_db.client import VectorDB
 from models.inference_models import EmbeddingModel, LLMModel
 from config import Config
 import logging
@@ -17,36 +18,21 @@ class Container:
 
         log.info("Load LLM models")
         self.llm_models = self._build_llm_models()
-        log.info("LLM models is load")
 
         log.info("Load embedding model")
         self.embedding_model = EmbeddingModel(
             cfg["models"]["embedding"]["path"],
             cfg["models"]["embedding"]["model_name"]
         )
-        log.info("Embedding model is load")
 
+        log.info("Init relational db client")
         self.relational_db = RelationalDatabaseTouch(
             cfg["database"]["relational_db"]["url"]
         )
 
-        log.info("Init vector db")
-        self.vector_dbs = self._build_vector_dbs()
-
-    @staticmethod
-    def _build_vector_dbs():
-
-        vector_cfg = cfg["database"]["vector_db"]
-
-        return {
-            name: VectorDatabaseTouch(
-                url=vector_cfg["url"],
-                collection_name=collection_cfg["name"],
-                date_from=vector_cfg["date_from"],
-                qdrant_config=collection_cfg["indexing"]
-            )
-            for name, collection_cfg in vector_cfg["collections"].items()
-        }
+        log.info("Init vector db client")
+        self.vector_db = VectorDB(url=cfg["database"]["vector_db"]["url"])
+        self._build_collections()
 
     @staticmethod
     def _build_llm_models():
@@ -57,6 +43,15 @@ class Container:
             name: LLMModel(model_path=path["path"])
             for name, path in llm_cfg.items()
         }
+
+    def _build_collections(self):
+
+        for collection in cfg["service"]["products"]:
+            self.vector_db.make_collection(
+                name=collection,
+                qdrant_config=cfg["database"]["vector_db"]["params"],
+                date_from=cfg["database"]["vector_db"]["date_from"]
+            )
 
 
 container = Container()

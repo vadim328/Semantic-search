@@ -3,6 +3,7 @@ from config import Config
 from text_processing.text_preparation import clean_comments
 import logging
 from typing import List
+import re
 
 cfg = Config().data
 log = logging.getLogger(__name__)
@@ -38,8 +39,9 @@ def summarize(
     )
 
     log.debug("Running LLM inference")
-
-    return llm_model.infer(prompt)
+    match = re.search(r"Сценарий проблемы:\s*(.*)", llm_model.infer(prompt))
+    scenario = match.group(1)
+    return scenario
 
 
 def fetch_embedding(

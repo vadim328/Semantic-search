@@ -3,6 +3,9 @@
 import numpy as np
 from rank_bm25 import BM25Okapi
 from text_processing.text_preparation import transforms_bm25
+import logging
+
+log = logging.getLogger(__name__)
 
 
 class HybridScorer:
@@ -14,9 +17,9 @@ class HybridScorer:
         alpha: float = 0.5
     ):
         """
-        :param hits: list[ScoredPoint] из Qdrant
-        :param query_text: текст запроса
-        :param alpha: вес BM25 (0..1)
+            :param hits: list[ScoredPoint] из Qdrant
+            :param query_text: текст запроса
+            :param alpha: коэффициент для гибридного поиска BM25 (0..1)
         """
         if not 0 <= alpha <= 1:
             raise ValueError("alpha must be between 0 and 1")
@@ -32,7 +35,9 @@ class HybridScorer:
             transforms_bm25(h.payload["text"])["text"].split()
             for h in hits
         ]
+
         tokenized_query = transforms_bm25(query_text)["text"].split()
+        log.debug(f'transforms text for bm25: {tokenized_query}')
 
         bm25 = BM25Okapi(tokenized_docs)
         bm25_scores = bm25.get_scores(tokenized_query)
@@ -41,7 +46,10 @@ class HybridScorer:
         cosine_norm = cosine_scores / (cosine_scores.max() + 1e-9)
         bm25_norm = bm25_scores / (bm25_scores.max() + 1e-9)
 
+        log.debug(f"Cosine score - {cosine_norm}, BM25 score - {bm25_norm}")
+
         # --- hybrid ---
+        # Для поиска по ключевым словам лучше увеличить альфу
         hybrid_scores = (
             alpha * bm25_norm +
             (1 - alpha) * cosine_norm
