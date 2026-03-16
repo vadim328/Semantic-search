@@ -1,0 +1,178 @@
+body {
+  font-family: Arial, sans-serif;
+  max-width: 1000px;
+  margin: 40px auto;
+  background: #fafafa;
+  padding: 25px 30px 50px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px 20px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+}
+
+input,
+select,
+button {
+  margin-top: 5px;
+  padding: 8px 16px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.query-field {
+  grid-column: 1 / -1;
+}
+
+.query-field input {
+  font-size: 16px;
+  padding: 12px;
+}
+
+.exact {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.exact input[type="checkbox"] {
+  margin: 0;
+  width: auto;
+}
+
+button {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 10px;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+#result.loading::before {
+  content: "Выполняется поиск...";
+  color: #555;
+  font-style: italic;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: white;
+}
+
+th,
+td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+}
+
+tr:hover {
+  background-color: #f9f9f9;
+}
+
+a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* help panel */
+
+.help-wrapper {
+  position: fixed;
+  top: 25px;
+  right: 25px;
+  z-index: 1000;
+}
+
+.help-icon {
+  width: 42px;
+  height: 42px;
+  background: #007bff;
+  color: white;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.help-panel {
+  position: absolute;
+  top: 0;
+  right: 55px;
+  width: 330px;
+  background: white;
+  border-radius: 12px;
+  padding: 18px 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(10px);
+  transition: all 0.2s ease;
+}
+
+.help-wrapper:hover .help-panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.help-panel h4 {
+  margin: 0 0 10px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.help-panel b {
+  display: block;
+  margin-top: 8px;
+}
+
+.help-panel span {
+  color: #555;
+}

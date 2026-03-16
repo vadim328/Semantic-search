@@ -57,7 +57,9 @@ transforms_bert = TT.TextCompose([
 ])
 
 transforms_comments = TT.TextCompose([
+    TT.RemoveFirstWords([r'Erudite']),
     TT.ReplaceText([
+                    (r'добрый день', ''),
                     (r'в работе', ''),
                     (r'запрос в работе', ''),
                     (r'отложен до.*', ''),
