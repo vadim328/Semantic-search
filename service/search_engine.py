@@ -46,7 +46,12 @@ class SemanticSearchEngine:
 
         return result
 
-    def _get_embedding(self, product: str, problem: str):
+    def _get_embedding(
+            self,
+            product: str,
+            problem: str,
+            comments=None,
+    ):
         # Временная функция
         """
             Метод для получения эмбеддинга запроса
@@ -60,6 +65,7 @@ class SemanticSearchEngine:
                 self.container.llm_models[product],
                 self.container.embedding_model,
                 problem,
+                comments
             )
 
         text = transforms_bert(text=problem)["text"]
@@ -76,21 +82,33 @@ class SemanticSearchEngine:
             filters=None
     ):
         """
-            Поиск информации по векторной БД
+            Поиск информации в векторной БД по введенному тексту
 
             :input:
-                str: Искомый текст
-                int: Количество лучших совпадений
-                float: Определяет баланс между значением косинусного расстояния и
+                query: Искомый текст
+                product: Название продукта для поиска в нужной коллекции
+                limit: Количество лучших совпадений
+                alpha: Баланс между значением косинусного расстояния и
                         алгоритма BM25
+                exact: Включение/отключение поиска по всем точкам коллекции
+                filters: Фильтры для сужения поиска
 
             :output:
-                dict: Отсортированный словарь с ИД запроса и значению комбинированного сходства
+                dict: Отсортированный словарь с ИД запроса и точности сходства
         """
         if filters is None:
             filters = {}
 
-        embedding = self._get_embedding(product, query)
+        # Если введен номер запроса, а не текст для поиска
+        if query.isdigit():
+            req_data = self.container.relational_db.fetch_request_data(request_id=query)
+            embedding = self._get_embedding(
+                product,
+                req_data["problem"],
+                req_data["comments"]
+            )
+        else:
+            embedding = self._get_embedding(product, query)
         try:
             # Получаем эмбеддинги из нужной коллекции в взависимости от продукта
             hits = self.container.vector_db.collection(product).fetch_embeddings(

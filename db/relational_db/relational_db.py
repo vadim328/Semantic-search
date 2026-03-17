@@ -10,7 +10,7 @@ class RelationalDatabaseTouch:
     def __init__(self, url):
         engine = create_async_engine(url)
         self.Session = async_sessionmaker(bind=engine)
-        self.additional_data_query = text(load_file("db/relational_db/queries/additional_data.sql"))
+        self.request_data_query = text(load_file("db/relational_db/queries/fetch_data_request.sql"))
         self.requests = {}
 
     async def make_request(self, query, params=None):
@@ -47,9 +47,24 @@ class RelationalDatabaseTouch:
             :output:
                 dict: Результат запроса
         """
-        additional_data = await self.make_request(self.additional_data_query, params)
+        query = text(load_file("db/relational_db/queries/additional_data.sql"))
+        additional_data = await self.make_request(query, params)
         log.info(f"Additional data received from relational db: {additional_data}")
         return additional_data
+
+    async def fetch_request_data(self, request_id: str):
+        """
+            Формирование запроса на получение описания и
+                комментариев по определенному запросу
+            :input:
+                dict: Параметры запроса
+            :output:
+                dict: Результат запроса
+        """
+        params = {"request_id": request_id}
+        request_data = await self.make_request(self.request_data_query, params)
+        log.debug(f"Request data received from relational db: {request_data}")
+        return request_data
 
     def get_data(self):
         """
