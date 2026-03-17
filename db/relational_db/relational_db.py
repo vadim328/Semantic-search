@@ -21,6 +21,7 @@ class RelationalDatabaseTouch:
                 datetime: Дата последней записи в векторной БД
                     или дата последнего успешного сохранения
         """
+        log.debug(f"Request params: {params}")
         async with self.Session() as session:
             try:
                 response = await session.execute(query, params)
@@ -52,7 +53,7 @@ class RelationalDatabaseTouch:
         log.info(f"Additional data received from relational db: {additional_data}")
         return additional_data
 
-    async def fetch_request_data(self, request_id: str):
+    async def fetch_request_data(self, params: dict):
         """
             Формирование запроса на получение описания и
                 комментариев по определенному запросу
@@ -61,7 +62,6 @@ class RelationalDatabaseTouch:
             :output:
                 dict: Результат запроса
         """
-        params = {"request_id": request_id}
         request_data = await self.make_request(self.request_data_query, params)
         log.debug(f"Request data received from relational db: {request_data}")
         return request_data

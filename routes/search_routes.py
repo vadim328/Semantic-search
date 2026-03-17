@@ -72,11 +72,10 @@ def create_search_router(searcher: SemanticSearchEngine) -> APIRouter:
             f"limit: {limit}, "
             f"alpha: {alpha}, "
             f"exact: {exact}",
-            f"filters: {filters}"
         )
 
         result = await searcher.search(query, product, limit, alpha, exact, filters)
-        log.info(f"Request result: {result}")
+        log.info(f"Result search request : {result}")
 
         return JSONResponse(result)
 

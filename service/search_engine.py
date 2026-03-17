@@ -101,7 +101,10 @@ class SemanticSearchEngine:
 
         # Если введен номер запроса, а не текст для поиска
         if query.isdigit():
-            req_data = self.container.relational_db.fetch_request_data(request_id=query)
+            req_data = await self.container.relational_db.fetch_request_data(
+                {"number": int(query)}
+            )
+            req_data = req_data[0]  # Берем первую и единствуенную строку
             embedding = self._get_embedding(
                 product,
                 req_data["problem"],
