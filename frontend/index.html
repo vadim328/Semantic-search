@@ -1,110 +1,141 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Поиск запросов</title>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Поиск запросов</title>
 
-<link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
 
 </head>
 
 <body>
+  <div class="support-label">SupportAI</div>
+  <div class="mode-switch">
+    <button id="searchTab" class="active">Поиск</button>
+    <button id="summaryTab">Суммаризация</button>
+  </div>
 
-<h2>Поиск запросов</h2>
+  <!-- SEARCH MENU -->
+  <div id="searchSection">
 
-<form id="searchForm">
+    <h2>Поиск запросов</h2>
 
-<label class="query-field">Запрос:
-<input type="text" id="query" required>
-</label>
+    <form id="searchForm">
 
-<label>Лимит:
-<input type="number" id="limit" value="5">
-</label>
+    <label class="query-field">Запрос:
+      <input type="text" id="query" required>
+    </label>
 
-<label>Альфа:
-<input type="number" step="0.01" id="alpha" value="0.5">
-</label>
+    <label>Лимит:
+      <input type="number" id="limit" value="5">
+    </label>
 
-<label>Продукт:
-<select id="product">
-<option value="">(не выбрано)</option>
-</select>
-</label>
+    <label>Альфа:
+      <input type="number" step="0.01" id="alpha" value="0.5">
+    </label>
 
-<label>Клиент:
-<select id="client">
-<option value="">(не выбрано)</option>
-</select>
-</label>
+    <label>Продукт:
+      <select id="product">
+        <option value="">(не выбрано)</option>
+      </select>
+    </label>
 
-<label>Дата с:
-<input type="date" id="date_from">
-</label>
+    <label>Клиент:
+      <select id="client">
+        <option value="">(не выбрано)</option>
+      </select>
+    </label>
 
-<label>Дата по:
-<input type="date" id="date_to">
-</label>
+    <label>Дата с:
+      <input type="date" id="date_from">
+    </label>
 
-<div class="exact">
-<input type="checkbox" id="exact" checked>
-<label for="exact">Быстрый поиск</label>
-</div>
+    <label>Дата по:
+      <input type="date" id="date_to">
+    </label>
 
-<button type="submit">Отправить</button>
-
-</form>
-
-<h3>Результат:</h3>
-<div id="result"></div>
-
-<!-- HELP PANEL -->
-
-<div class="help-wrapper">
-  <div class="help-icon">?</div>
-
-  <div class="help-panel">
-    <h4>Описание параметров</h4>
-
-    <b>Запрос:</b>
-    <span>Текст, для которого требуется найти схожие по описанию запросы.</span>
-
-    <b>Лимит:</b>
-    <span>Ограничение на количество найденных совпадений в порядке убывания.</span>
-
-    <b>Альфа:</b>
-    <span>
-      Коэффициент балансировки (0–1).<br>
-      α = 0 — используется только NN.<br>
-      α = 1 — используется только BM25.
-    </span>
-
-    <b>Продукт:</b>
-    <span>Название продукта, в коллекции которого будет осуществляться поиск</span>
-
-
-    <b>Фильтры для поиска запросов:</b>
-
-    <div class="help-subsection">
-      <b>Клиент</b>
-      <span>Полное наименование клиента в SD.</span>
-
-      <b>Дата с</b>
-      <span>Дата завершения запроса от.</span>
-
-      <b>Дата по</b>
-      <span>Дата завершения запроса до.</span>
+    <div class="exact">
+      <input type="checkbox" id="exact" checked>
+      <label for="exact">Быстрый поиск</label>
     </div>
 
-    <b>Быстрый поиск:</b>
-    <span>
-      True — быстрый поиск по индексам.<br>
-      False — Полный поиск по всей коллекции.
-    </span>
-  </div>
-</div>
+    <button type="submit">Отправить</button>
 
-<script type="module" src="/static/js/main.js"></script>
+    </form>
+
+    <h3>Результат:</h3>
+    <div id="result"></div>
+
+    <!-- HELP PANEL -->
+
+    <div class="help-wrapper">
+      <div class="help-icon">?</div>
+
+      <div class="help-panel">
+        <h4>Описание параметров</h4>
+
+        <b>Запрос:</b>
+        <span>Текст, для которого требуется найти схожие по описанию запросы.</span>
+
+        <b>Лимит:</b>
+        <span>Ограничение на количество найденных совпадений в порядке убывания.</span>
+
+        <b>Альфа:</b>
+        <span>
+          Коэффициент балансировки (0–1).<br>
+          α = 0 — используется только NN.<br>
+          α = 1 — используется только BM25.
+        </span>
+
+        <b>Продукт:</b>
+        <span>Название продукта, в коллекции которого будет осуществляться поиск</span>
+
+
+        <b>Фильтры для поиска запросов:</b>
+
+        <div class="help-subsection">
+          <b>Клиент</b>
+          <span>Полное наименование клиента в SD.</span>
+
+          <b>Дата с</b>
+          <span>Дата завершения запроса от.</span>
+
+          <b>Дата по</b>
+          <span>Дата завершения запроса до.</span>
+        </div>
+
+        <b>Быстрый поиск:</b>
+        <span>
+          True — быстрый поиск по индексам.<br>
+          False — Полный поиск по всей коллекции.
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMMARIZATION MENU -->
+
+  <div id="summarySection" style="display: none;">
+
+    <h2>Суммаризация</h2>
+
+    <form id="summaryForm">
+
+    <label class="summary-field">
+      <textarea id="summaryText" placeholder="Введите текст для суммаризации..." required></textarea>
+    </label>
+
+    <button type="submit">Суммаризировать</button>
+
+    </form>
+
+    <h3>Результат:</h3>
+    <div id="summaryResult"></div>
+
+  </div>
+
+  <script type="module" src="/static/js/main.js"></script>
 
 </body>
 </html>

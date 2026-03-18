@@ -37,3 +37,15 @@ export async function searchRequests(payload) {
   return await res.json();
 
 }
+
+export async function summarize(payload) {
+  const response = await fetch("/summarization/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ payload })
+  });
+
+  return await res.json();
+}

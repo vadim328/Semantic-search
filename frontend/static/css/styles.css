@@ -1,18 +1,25 @@
+/* ==============================
+   Основные стили страницы
+   ============================== */
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Inter', Arial, sans-serif;
   max-width: 1000px;
   margin: 40px auto;
-  background: #fafafa;
+  background: FloralWhite;
   padding: 25px 30px 50px;
   border-radius: 12px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
-h2 {
-  text-align: center;
-  margin-bottom: 20px;
+h2, h3, h4 {
+  font-weight: 600;     /* жирнее для заголовков */
+  color: #222;          /* чуть темнее текста */
+  line-height: 1.3;
 }
 
+/* ==============================
+   Формы поиска и суммаризации
+   ============================== */
 form {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -28,22 +35,46 @@ label {
 }
 
 input,
-select,
-button {
+select {
+  background-color: #DCDCDC; /* светло-серый фон */
+  border: none;
   margin-top: 5px;
   padding: 8px 16px;
   font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  border-radius: 12px;
   box-sizing: border-box;
   width: 100%;
+  color: #333;               /* цвет текста внутри */
 }
 
+/* Кнопки внутри формы */
+form button {
+  width: 25%;
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  background-color: #6A5ACD;
+  color: white;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: 'Inter', Arial, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.5px; /* немного увеличиваем расстояние между буквами */
+  padding: 10px;
+}
+
+form button:hover {
+  background-color: #6A5ACD;
+}
+/* Поле ввода текста для поиска */
 .query-field {
   grid-column: 1 / -1;
 }
 
 .query-field input {
+  background-color: #DCDCDC;
+  border-radius: 12px;
+  border: none;
+  color: #333;
   font-size: 16px;
   padding: 12px;
 }
@@ -61,26 +92,36 @@ button {
   width: auto;
 }
 
-button {
-  grid-column: 1 / -1;
-  margin-top: 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  padding: 10px;
+/* Поле ввода текста для суммаризации */
+.summary-field {
+  grid-column: 1 / -1; /* растянуть на всю ширину формы */
 }
 
-button:hover {
-  background-color: #0056b3;
+.summary-field textarea {
+  background-color: #DCDCDC;
+  border-radius: 12px;
+  border: none;
+  color: #333;
+  width: 100%;
+  min-height: 150px;   /* начальная высота */
+  padding: 12px;
+  font-size: 16px;
+  resize: vertical;    /* пользователь может менять высоту */
+  box-sizing: border-box;
 }
+
+#summaryText::placeholder {
+  color: #999;          /* цвет текста-подсказки */
+  font-size: 16px;      /* размер текста */
+}
+
+/* ==============================
+   Результаты поиска
+   ============================== */
 
 #result.loading::before {
   content: "Выполняется поиск...";
   color: #555;
-  font-style: italic;
 }
 
 table {
@@ -115,8 +156,9 @@ a:hover {
   text-decoration: underline;
 }
 
-/* help panel */
-
+/* ==============================
+   Help panel
+   ============================== */
 .help-wrapper {
   position: fixed;
   top: 25px;
@@ -127,7 +169,7 @@ a:hover {
 .help-icon {
   width: 42px;
   height: 42px;
-  background: #007bff;
+  background: #6A5ACD;
   color: white;
   border-radius: 50%;
   font-weight: bold;
@@ -144,7 +186,7 @@ a:hover {
   top: 0;
   right: 55px;
   width: 330px;
-  background: white;
+  background: FloralWhite;
   border-radius: 12px;
   padding: 18px 16px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.18);
@@ -174,9 +216,50 @@ a:hover {
 }
 
 .help-panel span {
-  color: #555;
+  color: #333;
 }
 
 .help-subsection {
   margin-left: 20px;
+}
+
+/* ==============================
+   Переключатель вкладок (mode-switch)
+   ============================== */
+.mode-switch {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.mode-switch button {
+  width: auto;          /* важное изменение */
+  display: inline-block; /* важно для flex */
+  padding: 10px 20px;
+  border: none;
+  background: #ddd;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.mode-switch button.active {
+  background: #6A5ACD;
+  color: white;
+}
+
+/* LOGO */
+
+.support-label {
+  position: fixed;        /* фиксируем в окне */
+  top: 20px;              /* отступ сверху */
+  left: 20px;             /* отступ слева */
+  font-family: Helvetica, Arial, sans-serif;
+  font-weight: 600;
+  font-size: 26px;
+  color: black;         /* цвет текста */
+  background-color: FloralWhite; /* лёгкий полупрозрачный фон */
+  padding: 6px 12px;      /* внутренние отступы */
+  border-radius: 6px;     /* скруглённые углы */
+  z-index: 1001;          /* чтобы было поверх всего */
 }

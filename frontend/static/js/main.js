@@ -1,5 +1,5 @@
-import { getProducts, getClients, searchRequests } from "./api.js";
-import { buildPayload } from "./form.js";
+import { getProducts, getClients, searchRequests, summarize } from "./api.js";
+import { buildPayloadSearch, buildPayloadSum } from "./form.js";
 import {
   fillSelect,
   renderClients,
@@ -12,6 +12,30 @@ const productSelect = document.getElementById("product");
 const clientSelect = document.getElementById("client");
 const result = document.getElementById("result");
 const form = document.getElementById("searchForm");
+
+function initTabs() {
+  const searchTab = document.getElementById("searchTab");
+  const summaryTab = document.getElementById("summaryTab");
+
+  const searchSection = document.getElementById("searchSection");
+  const summarySection = document.getElementById("summarySection");
+
+  searchTab?.addEventListener("click", () => {
+    searchSection.style.display = "block";
+    summarySection.style.display = "none";
+
+    searchTab.classList.add("active");
+    summaryTab.classList.remove("active");
+  });
+
+  summaryTab?.addEventListener("click", () => {
+    searchSection.style.display = "none";
+    summarySection.style.display = "block";
+
+    summaryTab.classList.add("active");
+    searchTab.classList.remove("active");
+  });
+}
 
 async function init() {
 
@@ -47,7 +71,7 @@ productSelect.addEventListener("change", async () => {
 
 });
 
-form.addEventListener("submit", async (e) => {
+form?.addEventListener("submit", async (e) => {
 
   e.preventDefault();
 
@@ -55,7 +79,7 @@ form.addEventListener("submit", async (e) => {
 
   try {
 
-    const payload = buildPayload();
+    const payload = buildPayloadSearch();
     const data = await searchRequests(payload);
 
     hideLoading(result);
@@ -75,4 +99,25 @@ form.addEventListener("submit", async (e) => {
 
 });
 
+const summaryForm = document.getElementById("summaryForm");
+const summaryResult = document.getElementById("summaryResult");
+
+summaryForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  summaryResult.innerHTML = "Загрузка...";
+
+  try {
+    const payload = buildPayloadSum();;
+
+    const data = await summarize(payload);
+
+    summaryResult.innerText = data.result;
+
+  } catch (err) {
+    summaryResult.innerHTML = `<p>Ошибка: ${err.message}</p>`;
+  }
+});
+
 init();
+initTabs();

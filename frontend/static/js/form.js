@@ -1,4 +1,4 @@
-export function buildPayload() {
+export function buildPayloadSearch() {
 
   const payload = {
     query: document.getElementById("query").value,
@@ -31,4 +31,10 @@ export function buildPayload() {
 
   return payload;
 
+}
+
+export function buildPayloadSum() {
+    const payload = {
+        text: document.getElementById("summaryText").value,
+    };
 }
