@@ -4,7 +4,7 @@ from service.updater import DataUpdater
 from service.logging_config import setup_logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from routes.search_routes import create_search_router
+from api.routes import register_routes
 import asyncio
 import logging
 from config import Config
@@ -17,9 +17,11 @@ app = FastAPI()
 searcher = SemanticSearchEngine()
 updater = DataUpdater()
 
-# Подключаем роутер
-search_router = create_search_router(searcher)
-app.include_router(search_router)
+# Подключаем маршруты
+search_router = register_routes(searcher)
+for router in register_routes(searcher):
+    log.info(f"include api router - {router}")
+    app.include_router(router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -45,12 +47,3 @@ async def startup_event():
 @app.get("/Health")
 async def root():
     return {"Status": "OK"}
-
-
-'''@app.get('/find/{query}')
-async def return_formulation(query: str):
-    """
-        GET - метод. Поиск запросов по тексту
-    """
-    log.info(f"Requested: {query}")
-    return searcher.search(query)'''

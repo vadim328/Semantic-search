@@ -1,8 +1,8 @@
-# routes/search_routes.py
-from typing import List
-from fastapi import APIRouter, Request, HTTPException
+# api/routes/search_routes.py
+from fastapi import APIRouter, Request
 from service.search_engine import SemanticSearchEngine
 from fastapi.responses import JSONResponse
+from api.routes.validate_params import validate_params
 from config import Config
 import logging
 
@@ -10,16 +10,7 @@ log = logging.getLogger(__name__)
 cfg = Config().data
 
 
-def validate_params(params: dict, req_params: List):
-    for req_param in req_params:
-        if not params.get(req_param):
-            raise HTTPException(
-                status_code=400,
-                detail="Missing required parameters"
-            )
-
-
-def create_search_router(searcher: SemanticSearchEngine) -> APIRouter:
+def create_search_routes(searcher: SemanticSearchEngine) -> APIRouter:
 
     router = APIRouter(prefix="/search", tags=["Search"])
 

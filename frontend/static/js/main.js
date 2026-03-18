@@ -108,11 +108,11 @@ summaryForm?.addEventListener("submit", async (e) => {
   summaryResult.innerHTML = "Загрузка...";
 
   try {
-    const payload = buildPayloadSum();;
+    const payload = buildPayloadSum();
 
     const data = await summarize(payload);
 
-    summaryResult.innerText = data.result;
+    summaryResult.innerText = data.summary;
 
   } catch (err) {
     summaryResult.innerHTML = `<p>Ошибка: ${err.message}</p>`;

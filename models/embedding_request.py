@@ -14,7 +14,7 @@ PROMPT_TEMPLATE = (
 )
 
 
-def summarize(
+def make_summarize(
         llm_model: LLMModel,
         problem: str,
         comments: str
@@ -52,7 +52,7 @@ def fetch_embedding(
 ) -> List[float]:
 
     try:
-        summary = summarize(llm_model, problem, comments)
+        summary = make_summarize(llm_model, problem, comments)
         log.debug(f"Result of summarization:\n{summary}")
 
         log.debug("Encoding summary")

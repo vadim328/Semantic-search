@@ -37,4 +37,6 @@ export function buildPayloadSum() {
     const payload = {
         text: document.getElementById("summaryText").value,
     };
+
+    return payload;
 }

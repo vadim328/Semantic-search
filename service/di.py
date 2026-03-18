@@ -16,8 +16,8 @@ class Container:
     """
     def __init__(self):
 
-        log.info("Load LLM models")
-        self.llm_models = self._build_llm_models()
+        log.info("Load LLM model")
+        self.llm_model = LLMModel(model_path=cfg["models"]["llm"]["path"])
 
         log.info("Load embedding model")
         self.embedding_model = EmbeddingModel(

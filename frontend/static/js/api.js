@@ -1,7 +1,7 @@
 export async function getProducts() {
 
-  const res = await fetch("/search/options/products");
-  return await res.json();
+  const response = await fetch("/search/options/products");
+  return await response.json();
 
 }
 
@@ -13,11 +13,11 @@ export async function getClients(product) {
     return clientsCache.get(product);
   }
 
-  const res = await fetch(
+  const response = await fetch(
     `/search/options/metadata?product=${encodeURIComponent(product)}`
   );
 
-  const data = await res.json();
+  const data = await response.json();
 
   clientsCache.set(product, data.clients);
 
@@ -26,7 +26,7 @@ export async function getClients(product) {
 
 export async function searchRequests(payload) {
 
-  const res = await fetch("/search/", {
+  const response = await fetch("/search/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -34,7 +34,7 @@ export async function searchRequests(payload) {
     body: JSON.stringify(payload)
   });
 
-  return await res.json();
+  return await response.json();
 
 }
 
@@ -44,8 +44,8 @@ export async function summarize(payload) {
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ payload })
+    body: JSON.stringify(payload)
   });
 
-  return await res.json();
+  return await response.json();
 }
