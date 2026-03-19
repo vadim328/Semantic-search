@@ -2,11 +2,10 @@ database:
   relational_db:
     url: ""
   vector_db:
-    main:
-      url: ""
-      collection_name: ""
-      date_from: ""
-    indexing:
+    url: ""
+    date_from: ""
+    params:
+      vector_size:           # Размер вектора для сохранения
       m_value:               # Сколько k-ближайших соседей хранить
       ef_construct:          # сколько кандидатов анализируется при вставке точки
       full_scan_threshold:   # Количество точек когда не нужен hnsw
@@ -14,8 +13,9 @@ database:
       on_disk:               # где хранить граф
 
 model:
-  path: ""
-  model_name: ""
+  url: ""
 
-logging:
-  level: ""
+service:
+  threshold:                 # Доля схожести векторов
+  logging_level:             # Уровень логирование
+  products:                  # Список продуктов для создания коллекций

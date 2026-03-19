@@ -1,0 +1,9 @@
+service:
+  logging_level:                # Уровень логирование
+
+llm:
+  path:                         # Путь до LLM модели
+
+embedding:
+  path:                         # Путь до Embedding модели
+  model_name:                   # Название модели
