@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+
+  model_service:
+    build: .
+    container_name: model_service
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./models:/app/models
+    restart: always

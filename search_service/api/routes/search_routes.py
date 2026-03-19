@@ -1,9 +1,9 @@
 # api/routes/search_routes.py
 from fastapi import APIRouter, Request
-from service.search_engine import SemanticSearchEngine
+from search_service.service.search_engine import SemanticSearchEngine
 from fastapi.responses import JSONResponse
-from api.routes.validate_params import validate_params
-from config import Config
+from search_service.api.routes.validate_params import validate_params
+from search_service.config import Config
 import logging
 
 log = logging.getLogger(__name__)

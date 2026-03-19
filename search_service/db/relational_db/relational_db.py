@@ -1,6 +1,6 @@
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from service.utils import load_file
+from search_service.service.utils import load_file
 import logging
 
 log = logging.getLogger(__name__)
@@ -10,7 +10,7 @@ class RelationalDatabaseTouch:
     def __init__(self, url):
         engine = create_async_engine(url)
         self.Session = async_sessionmaker(bind=engine)
-        self.request_data_query = text(load_file("db/relational_db/queries/fetch_data_request.sql"))
+        self.request_data_query = text(load_file("search_service/db/relational_db/queries/fetch_data_request.sql"))
         self.requests = {}
 
     async def make_request(self, query, params=None):
@@ -36,7 +36,7 @@ class RelationalDatabaseTouch:
             :input:
                 dict: Параметры запроса
         """
-        query = text(load_file("db/relational_db/queries/test.sql")) #####
+        query = text(load_file("search_service/db/relational_db/queries/test.sql")) #####
         self.requests = await self.make_request(query, params)
         log.info(f"Data received from relational db, count rows - {len(self.requests)}")
 
@@ -48,7 +48,7 @@ class RelationalDatabaseTouch:
             :output:
                 dict: Результат запроса
         """
-        query = text(load_file("db/relational_db/queries/additional_data.sql"))
+        query = text(load_file("search_service/db/relational_db/queries/additional_data.sql"))
         additional_data = await self.make_request(query, params)
         log.info(f"Additional data received from relational db: {additional_data}")
         return additional_data

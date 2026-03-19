@@ -1,9 +1,8 @@
 # api/routes/summarize_routes.py
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from api.routes.validate_params import validate_params
-from service.di import container
-from models.embedding_request import make_summarize
+from search_service.api.routes.validate_params import validate_params
+from search_service.service.di import container
 import logging
 
 log = logging.getLogger(__name__)
@@ -30,8 +29,7 @@ def create_summarize_router() -> APIRouter:
 
         log.info(f"Request on summarization {text}")
 
-        summary = make_summarize(
-            llm_model=container.llm_model,
+        summary = container.model_client.make_summarize(
             problem=text,
             comments=comments
         )

@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package model;
+
+service ModelService {
+
+  rpc Generate (GenerateRequest) returns (GenerateResponse);
+
+  rpc Embed (EmbeddingRequest) returns (EmbeddingResponse);
+
+}
+
+message GenerateRequest {
+  string prompt = 1;
+  int32 max_tokens = 2;
+}
+
+message GenerateResponse {
+  string text = 1;
+}
+
+message EmbeddingRequest {
+  repeated string text = 1;
+}
+
+message EmbeddingResponse {
+  repeated Embedding embeddings = 1;
+}
+
+message Embedding {
+  repeated float vector = 1;
+}

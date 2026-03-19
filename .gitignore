@@ -3,7 +3,7 @@ requests.csv
 test.py
 *__pycache__*
 *.zip
-/models/onnx/*
-/models/Liquid/*
+*/models/onnx/*
+*/models/Liquid/*
 config.yaml
 *test.sql

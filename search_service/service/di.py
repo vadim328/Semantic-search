@@ -1,7 +1,7 @@
 # services/di.py
 from db.relational_db.relational_db import RelationalDatabaseTouch
 from db.vector_db.client import VectorDB
-from models.inference_models import EmbeddingModel, LLMModel
+from service.model_client import ModelServiceClient
 from config import Config
 import logging
 
@@ -16,14 +16,8 @@ class Container:
     """
     def __init__(self):
 
-        log.info("Load LLM model")
-        self.llm_model = LLMModel(model_path=cfg["models"]["llm"]["path"])
-
-        log.info("Load embedding model")
-        self.embedding_model = EmbeddingModel(
-            cfg["models"]["embedding"]["path"],
-            cfg["models"]["embedding"]["model_name"]
-        )
+        log.info("Init model service client")
+        self.model_client = ModelServiceClient(cfg["model"]["url"])
 
         log.info("Init relational db client")
         self.relational_db = RelationalDatabaseTouch(
@@ -33,16 +27,6 @@ class Container:
         log.info("Init vector db client")
         self.vector_db = VectorDB(url=cfg["database"]["vector_db"]["url"])
         self._build_collections()
-
-    @staticmethod
-    def _build_llm_models():
-
-        llm_cfg = cfg["models"]["llm"]
-
-        return {
-            name: LLMModel(model_path=path["path"])
-            for name, path in llm_cfg.items()
-        }
 
     def _build_collections(self):
 

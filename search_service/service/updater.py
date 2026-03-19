@@ -1,11 +1,10 @@
 # service/updater.py
 import asyncio
 from typing import List
-from service.di import container
-from text_processing.text_preparation import transforms_bert
+from search_service.service.di import container
+from search_service.text_processing.text_preparation import transforms_bert
 from qdrant_client.models import PointStruct
 from datetime import datetime, timedelta
-from models.embedding_request import fetch_embedding
 from collections import defaultdict
 import logging
 
@@ -96,17 +95,16 @@ class DataUpdater:
                 output:
                     vector - эмбеддинг запроса
         """
+
         if row["product"] == "Naumen":
-            return fetch_embedding(
-                self.container.llm_models[row["product"]],
-                self.container.embedding_model,
-                row["problem"],
-                row["comments"]
+            problem_summary = self.container.model_client.make_summarize(
+                problem=row["problem"],
+                comments=row["comments"]
             )
+            return self.container.model_client.embed(problem_summary)
 
         text = transforms_bert(text=row["problem"])["text"]
-
-        return self.container.embedding_model.encode(text)[0]
+        return self.container.model_client.embed(text)
 
     def _build_points(self, rows: List[dict]) -> dict:
         """

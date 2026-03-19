@@ -2,7 +2,6 @@ import logging
 import sys
 from config import Config
 
-
 cfg = Config().data
 
 

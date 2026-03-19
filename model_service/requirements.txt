@@ -1,0 +1,10 @@
+grpcio
+grpcio-tools
+protobuf
+
+sentence-transformers==5.1.2
+transformers==4.55.4
+optimum==2.0.0
+optimum[onnxruntime]
+accelerate==1.13.0
+numpy

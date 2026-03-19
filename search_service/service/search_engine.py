@@ -1,10 +1,9 @@
-from service.di import container
-from models.embedding_request import fetch_embedding
-from service.scorer import HybridScorer
-from text_processing.text_preparation import transforms_bert
-from service.utils import timestamp_to_date
+from search_service.service.di import container
+from search_service.service.scorer import HybridScorer
+from search_service.text_processing.text_preparation import transforms_bert
+from search_service.service.utils import timestamp_to_date
 import logging
-from config import Config
+from search_service.config import Config
 
 log = logging.getLogger(__name__)
 cfg = Config().data
@@ -61,16 +60,16 @@ class SemanticSearchEngine:
                     vector - эмбеддинг запроса
         """
         if product == "Naumen":
-            return fetch_embedding(
-                self.container.llm_models[product],
-                self.container.embedding_model,
-                problem,
-                comments
+
+            problem_summary = self.container.model_client.make_summarize(
+                problem=problem,
+                comments=comments
             )
+            return self.container.model_client.embed(problem_summary)
 
         text = transforms_bert(text=problem)["text"]
 
-        return self.container.embedding_model.encode(text)[0]
+        return self.container.model_client.embed(text)
 
     async def search(
             self,
