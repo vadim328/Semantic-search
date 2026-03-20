@@ -3,12 +3,12 @@ from concurrent import futures
 
 from contracts.generated import model_pb2, model_pb2_grpc
 
-from service.inference.embedding import EmbeddingModel
-from service.inference.llm import LLMModel
+from model_service.service.inference.embedding import EmbeddingModel
+from model_service.service.inference.llm import LLMModel
 
 import logging
-from logging_config import setup_logging
-from config import Config
+from model_service.service.logging_config import setup_logging
+from model_service.service.config import Config
 
 setup_logging()  # настройка логирования
 log = logging.getLogger(__name__)
@@ -26,7 +26,8 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
         )
 
         self.llm_model = LLMModel(
-            config.llm["path"]
+            model_path=config.llm["path"],
+            threads=config.llm["n_threads"]
         )
 
     def Generate(self, request, context):

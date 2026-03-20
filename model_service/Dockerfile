@@ -24,4 +24,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 50051
 
-CMD ["python", "-m", "service.grpc_server"]
+CMD ["python", "-m", "model_service.service.grpc_server"]

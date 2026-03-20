@@ -1,5 +1,5 @@
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from llama_cpp import Llama
 import logging
 
 log = logging.getLogger(__name__)
@@ -9,36 +9,29 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 class LLMModel:
     """Класс LLM модели для суммаризации диалога
         и извлечения признаков"""
-    def __init__(self, model_path):
+    def __init__(
+            self,
+            model_path: str,
+            threads: int
+    ):
 
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_path,
-            device_map={"": "cpu"},
-            torch_dtype="bfloat16",
+        self.model = Llama(
+            model_path=model_path,  # путь к квантованной модели
+            n_ctx=2048,             # длина контекста
+            n_threads=threads,      # сколько потоков CPU использовать
+            n_gpu_layers=0          # 0 если без GPU
         )
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path + "tokenizer/")
+    def generate(
+            self,
+            prompt: str,
+            max_tokens=512
+    ):
 
-    def generate(self, prompt, max_tokens=512):
+        output = self.model(prompt, max_tokens=max_tokens)
 
-        input_ids = self.tokenizer.apply_chat_template(
-            [{"role": "user", "content": prompt}],
-            add_generation_prompt=True,
-            return_tensors="pt",
-            tokenize=True,
-        ).to(device)
-
-        output = self.model.generate(
-            input_ids,
-            do_sample=True,
-            temperature=0.3,
-            min_p=0.15,
-            repetition_penalty=1.05,
-            max_new_tokens=max_tokens,
-        )
-        #return self.tokenizer.decode(output[0], skip_special_tokens=True)
-        generated_tokens = output[0][input_ids.shape[1]:]
-        return self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        # 3. Вывод результата
+        return output['choices'][0]['text']
 
     def infer(self, prompt):
         return self.generate(prompt)

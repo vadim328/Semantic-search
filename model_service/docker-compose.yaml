@@ -2,11 +2,12 @@ version: "3.9"
 
 services:
 
-  model_service:
+  athena:
     build: .
     container_name: model_service
+    image: athena
     ports:
       - "50051:50051"
     volumes:
-      - ./models:/app/models
+      - ./model_service/models:/app/model_service/models
     restart: always

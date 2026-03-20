@@ -1,6 +1,6 @@
 import logging
 import sys
-from config import Config
+from model_service.service.config import Config
 
 cfg = Config().data
 
