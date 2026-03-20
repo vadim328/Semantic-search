@@ -68,7 +68,6 @@ class SemanticSearchEngine:
             return self.container.model_client.embed(problem_summary)
 
         text = transforms_bert(text=problem)["text"]
-
         return self.container.model_client.embed(text)
 
     async def search(

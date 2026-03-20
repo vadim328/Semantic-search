@@ -4,16 +4,17 @@ from optimum.onnxruntime import ORTOptimizer
 from optimum.onnxruntime.configuration import OptimizationConfig
 
 
-def model_to_onnx(model_name: str):
+def model_to_onnx(model_name: str, export="./onnx"):
     """Загружает, конвертирует модель в формат onnx и сохраняет
     Args:
         model_name: id модели на HuggingFace.
+        export: Директория для сохранения
     """
     ort_model = ORTModelForFeatureExtraction.from_pretrained(model_name, export=True)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    ort_model.save_pretrained("./onnx")
-    tokenizer.save_pretrained("./onnx")
+    ort_model.save_pretrained(export)
+    tokenizer.save_pretrained(export)
 
 
 def model_optimizer(model_path: str):
@@ -29,8 +30,12 @@ def model_optimizer(model_path: str):
 
     # Применяем оптимизацию
     optimizer.optimize(
-        save_dir="./onnx/optim/",
+        save_dir=model_path+"/optim/",
         optimization_config=optimization_config,
     )
 
 
+if __name__ == "__main__":
+    export = "./onnx"
+    model_to_onnx("deepvk/USER-bge-m3", export=export)
+    model_optimizer(export)

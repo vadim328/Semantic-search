@@ -7,3 +7,4 @@ test.py
 */models/embedding/*
 config.yaml
 *test.sql
+onnx/

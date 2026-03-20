@@ -95,7 +95,6 @@ class DataUpdater:
                 output:
                     vector - эмбеддинг запроса
         """
-
         if row["product"] == "Naumen":
             problem_summary = self.container.model_client.make_summarize(
                 problem=row["problem"],

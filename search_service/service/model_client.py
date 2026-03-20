@@ -1,5 +1,6 @@
 import re
 import grpc
+import numpy as np
 
 from contracts.generated import model_pb2
 from contracts.generated import model_pb2_grpc
@@ -42,7 +43,9 @@ class ModelServiceClient:
                 texts=texts
             )
         )
-        return response.embeddings[0].vector
+        # меняем на нужный тип данных
+        query_vector = np.array(response.embeddings[0].vector, dtype=np.float32)
+        return query_vector
 
     def make_summarize(self, problem, comments):
 
