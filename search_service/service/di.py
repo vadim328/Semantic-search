@@ -1,41 +1,73 @@
 # services/di.py
-from db.relational_db.relational_db import RelationalDatabaseTouch
-from db.vector_db.client import VectorDB
-from service.model_client import ModelServiceClient
-from config import Config
+
+import asyncio
 import logging
 
+from search_service.db.relational_db.relational_db import RelationalDatabaseTouch
+from search_service.db.vector_db.client import VectorDB
+from search_service.service.model_client import ModelServiceClient
+from search_service.config import Config
+
 log = logging.getLogger(__name__)
-cfg = Config().data
+cfg = Config()
 
 
 class Container:
     """
-        Класс для инициализации объектов,
-        необходимых для работы сервиса
+    Класс для инициализации объектов,
+    необходимых для работы сервиса
     """
-    def __init__(self):
 
+    def __init__(self):
+        # ❗ только синхронная инициализация (без I/O)
         log.info("Init model service client")
-        self.model_client = ModelServiceClient(cfg["model"]["url"])
+        self.model_client = ModelServiceClient(cfg.model["url"])
 
         log.info("Init relational db client")
         self.relational_db = RelationalDatabaseTouch(
-            cfg["database"]["relational_db"]["url"]
+            cfg.database["relational_db"]["url"]
         )
 
         log.info("Init vector db client")
-        self.vector_db = VectorDB(url=cfg["database"]["vector_db"]["url"])
-        self._build_collections()
+        self.vector_db = VectorDB(
+            url=cfg.database["vector_db"]["url"]
+        )
 
-    def _build_collections(self):
+    @classmethod
+    async def create(cls) -> "Container":
+        self = cls()
 
-        for collection in cfg["service"]["products"]:
+        await self._build_collections()
+
+        return self
+
+    async def _build_collections(self):
+        log.info("Initializing vector DB collections")
+
+        collection_names = cfg.service["products"]
+
+        tasks = [
             self.vector_db.make_collection(
-                name=collection,
-                qdrant_config=cfg["database"]["vector_db"]["params"],
-                date_from=cfg["database"]["vector_db"]["date_from"]
+                collection_name=name,
+                qdrant_config=cfg.database["vector_db"]["params"],
+                date_from=cfg.database["vector_db"]["date_from"]
             )
+            for name in collection_names
+        ]
+
+        await asyncio.gather(*tasks)
+
+        log.info("Collections initialized")
 
 
-container = Container()
+container: Container | None = None
+
+
+async def init_container() -> Container:
+    global container
+
+    if container is None:
+        log.info("Creating DI container")
+        container = await Container.create()
+
+    return container

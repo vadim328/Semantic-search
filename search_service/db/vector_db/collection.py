@@ -1,8 +1,14 @@
-from typing import List
-from qdrant_client.models import PointStruct, SearchParams, VectorParams, HnswConfigDiff, Distance
-from qdrant_client import QdrantClient
-from db.vector_db.filters import _build_filter
-from db.vector_db.metadata import CollectionMetadata
+from typing import List, Optional
+from qdrant_client.models import (
+    PointStruct,
+    SearchParams,
+    VectorParams,
+    HnswConfigDiff,
+    Distance
+)
+from qdrant_client import AsyncQdrantClient
+from search_service.db.vector_db.filters import _build_filter
+from search_service.db.vector_db.metadata import CollectionMetadata
 from dataclasses import asdict
 from datetime import datetime
 import logging
@@ -13,13 +19,12 @@ log = logging.getLogger(__name__)
 class CollectionStore:
 
     def __init__(
-            self,
-            client: QdrantClient,
-            collection: str,
-            qdrant_config: dict,
-            date_from: str
+        self,
+        client: AsyncQdrantClient,
+        collection: str,
+        date_from: str
     ):
-
+        # ❗ только присвоения — никакого I/O
         self._client = client
         self._collection = collection
 
@@ -29,65 +34,43 @@ class CollectionStore:
             "%Y-%m-%d"
         ).timestamp()
 
-        self.init_collection(
-            qdrant_config=qdrant_config
-        )
+    # =========================
+    # 🔥 ASYNC FACTORY
+    # =========================
+    @classmethod
+    async def create(
+        cls,
+        client: AsyncQdrantClient,
+        collection: str,
+        qdrant_config: dict,
+        date_from: str
+    ) -> "CollectionStore":
 
-    def refresh_metadata(self):
+        self = cls(client, collection, date_from)
+
+        await self._init_collection(qdrant_config)
+
+        return self
+
+    # =========================
+    # INIT
+    # =========================
+    async def _init_collection(self, qdrant_config: dict):
         """
-            Получение метаданных коллекции при первичном подключении,
-            когда коллекция существует
+        Инициализация коллекции (без гонок)
         """
-        offset = None
 
-        clients = set()
-        last_date = self._metadata.date_last_record
+        exists = await self._client.collection_exists(self._collection)
 
-        # Батчами размером в 1000 точек проходимся по всем точкам коллекции
-        while True:
-
-            points, offset = self._client.scroll(
-                collection_name=self._collection,
-                limit=1000,
-                offset=offset,
-                with_payload=True,
-                with_vectors=False
-            )
-
-            for p in points:
-
-                payload = p.payload
-
-                if "client" in payload:
-                    clients.add(payload["client"])
-
-                if "date_end" in payload:
-                    if payload["date_end"] > last_date:
-                        last_date = payload["date_end"]
-
-            if offset is None:
-                break
-
-        self._metadata.clients = clients
-        self._metadata.date_last_record = last_date
-        self._metadata.points_count = self._client.get_collection(self._collection).points_count
-
-    def init_collection(self, qdrant_config: dict):
-        """
-            Инициализация коллекции
-                input:
-                    qdrant_config - параметры для создания коллекции
-        """
-        if self._client.collection_exists(self._collection):
+        if exists:
             log.info(f"Collection '{self._collection}' already exists")
-            self.refresh_metadata()  # Получаем метаданные коллекции
+            await self._refresh_metadata()
             return
 
         log.info(f"Creating collection '{self._collection}'")
 
         try:
-
-            self._client.create_collection(
+            await self._client.create_collection(
                 collection_name=self._collection,
                 vectors_config=VectorParams(
                     size=qdrant_config["vector_size"],
@@ -101,69 +84,102 @@ class CollectionStore:
                     on_disk=qdrant_config["on_disk"],
                 )
             )
+        except Exception as e:
+            # ⚠️ защита от race condition (другая корутина могла создать)
+            log.warning(f"Collection creation race: {e}")
 
-        except ValueError:
-            log.error("Qdrant config not specified")
+        # после — гарантированно читаем актуальное состояние
+        await self._refresh_metadata()
+
+    # =========================
+    # METADATA
+    # =========================
+    async def _refresh_metadata(self):
+        """
+        Полное обновление metadata (дорогое)
+        """
+
+        offset: Optional[int] = None
+
+        clients = set()
+        last_date = self._metadata.date_last_record
+
+        while True:
+            points, offset = await self._client.scroll(
+                collection_name=self._collection,
+                limit=1000,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False
+            )
+
+            for p in points:
+                payload = p.payload or {}
+
+                client = payload.get("client")
+                if client:
+                    clients.add(client)
+
+                date_end = payload.get("date_end")
+                if date_end and date_end > last_date:
+                    last_date = date_end
+
+            if offset is None:
+                break
+
+        collection_info = await self._client.get_collection(self._collection)
+
+        self._metadata.clients = clients
+        self._metadata.date_last_record = last_date
+        self._metadata.points_count = collection_info.points_count
 
     def _update_metadata_fast(self, points: List[PointStruct]):
         """
-            Обновление метаданных после добавления точек
-                input:
-                    points - точки для извлечения метаданных
+        Быстрое обновление metadata (без похода в БД)
         """
 
         for p in points:
+            payload = p.payload or {}
 
-            payload = p.payload
+            client = payload.get("client")
+            if client:
+                self._metadata.clients.add(client)
 
-            if "client" in payload:
-                self._metadata.clients.add(payload["client"])
-
-            if "date_end" in payload:
-                if payload["date_end"] > self._metadata.date_last_record:
-                    self._metadata.date_last_record = payload["date_end"]
+            date_end = payload.get("date_end")
+            if date_end and date_end > self._metadata.date_last_record:
+                self._metadata.date_last_record = date_end
 
         self._metadata.points_count += len(points)
 
-    def save_embeddings(self, points: List[PointStruct]):
-        """
-            Сохранение эмбеддингов в коллекцию
-                input:
-                    points - точки для сохранению
-        """
+    # =========================
+    # PUBLIC API
+    # =========================
+    async def save_embeddings(self, points: List[PointStruct]):
         log.info(f"Saving {len(points)} embeddings")
 
         try:
-            self._client.upsert(
+            await self._client.upsert(
                 collection_name=self._collection,
                 points=points
             )
 
-            # быстро обновляем metadata
             self._update_metadata_fast(points)
 
         except Exception as e:
             log.exception(f"Embedding unsuccessfully saved. Error - {e}")
 
-    def fetch_embeddings(
+    async def fetch_embeddings(
         self,
         embedding,
         exact: bool,
         filters: dict,
     ):
-        """
-            Получение близких эмбеддингов по косинусному расстоянию
-                input:
-                    embedding - вектор для рассчета
-                    exact - требуется ли использовать полный перебор точек в коллекции
-                    filters - фильтры для сужения поиска
-        """
         query_filter = _build_filter(filters)
 
-        hits = self._client.query_points(
+        hits = await self._client.query_points(
             collection_name=self._collection,
             query=embedding,
-            limit=self._metadata.points_count if exact else 500,  # Находим все точки, если не быстрый поиск,
+            limit=self._metadata.points_count if exact else 500,
             query_filter=query_filter,
             search_params=SearchParams(
                 exact=exact,

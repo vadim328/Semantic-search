@@ -1,26 +1,28 @@
-from qdrant_client import QdrantClient
-from db.vector_db.collection import CollectionStore
+from qdrant_client import AsyncQdrantClient
+from search_service.db.vector_db.collection import CollectionStore
 
 
 class VectorDB:
 
     def __init__(self, url: str):
-        self.client = QdrantClient(url)
+        self.client = AsyncQdrantClient(url)
         self._collections = {}
 
-    def make_collection(
-            self,
-            date_from: str,
-            name: str,
-            qdrant_config: dict
+    async def make_collection(
+        self,
+        date_from: str,
+        collection_name: str,
+        qdrant_config: dict
     ):
 
-        self._collections[name] = CollectionStore(
+        store = await CollectionStore.create(
             client=self.client,
-            collection=name,
+            collection=collection_name,
             qdrant_config=qdrant_config,
             date_from=date_from
         )
+
+        self._collections[collection_name] = store
 
     def collection(self, name: str):
         return self._collections[name]

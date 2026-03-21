@@ -1,31 +1,25 @@
 from fastapi import FastAPI
-from service.search_engine import SemanticSearchEngine
-from service.updater import DataUpdater
-from service.logging_config import setup_logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from api.routes import register_routes
-import asyncio
 import logging
+import asyncio
+
+from service.logging_config import setup_logging
+from service.search_engine import SemanticSearchEngine
+from service.updater import DataUpdater
+from service.di import init_container
+from api.routes import register_routes
 from config import Config
 
-
-setup_logging()  # настройка логирования
+setup_logging()
 log = logging.getLogger(__name__)
+
 app = FastAPI()
 
-searcher = SemanticSearchEngine()
-updater = DataUpdater()
-
-# Подключаем маршруты
-search_router = register_routes(searcher)
-for router in register_routes(searcher):
-    log.info(f"include api router - {router}")
-    app.include_router(router)
-
+# Подключаем CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # можно указать ["http://127.0.0.1:5000"] и т.п. для безопасности
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,12 +29,32 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """
-        Функция для первичного запуска приложения.
-            Инициализирует классы, подключаетсяк БД,
-                векторизует запросы и загружает их в БД
+    Функция для первичного запуска приложения:
+    - создаёт контейнер
+    - передаёт его searcher и updater
+    - запускает updater
     """
+
     Config()  # Считываем файл на старте
-    asyncio.create_task(updater.run())
+
+    # создаём контейнер
+    container = await init_container()  # type: ignore
+
+    searcher = SemanticSearchEngine(container)  # type: ignore
+    updater = DataUpdater(container)  # type: ignore
+
+    # Запускаем обновления в фоне
+    asyncio.create_task(updater.run())  # type: ignore
+
+    search_routers = register_routes(
+        searcher=searcher,
+        container=container
+    )
+    for router in search_routers:
+        log.info(f"Include api router - {router}")
+        app.include_router(router)
+
+    # Статика фронтенда
     app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 

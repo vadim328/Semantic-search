@@ -1,4 +1,3 @@
-from search_service.service.di import container
 from search_service.service.scorer import HybridScorer
 from search_service.text_processing.text_preparation import transforms_bert
 from search_service.service.utils import timestamp_to_date
@@ -10,7 +9,7 @@ cfg = Config().data
 
 
 class SemanticSearchEngine:
-    def __init__(self):
+    def __init__(self, container):
         self.container = container
         self.scorer = HybridScorer()
         self.threshold = cfg["service"]["threshold"]
@@ -112,7 +111,8 @@ class SemanticSearchEngine:
             embedding = self._get_embedding(product, query)
         try:
             # Получаем эмбеддинги из нужной коллекции в взависимости от продукта
-            hits = self.container.vector_db.collection(product).fetch_embeddings(
+            vector_db_collection = self.container.vector_db.collection(product)
+            hits = await vector_db_collection.fetch_embeddings(
                 embedding,
                 exact,
                 filters

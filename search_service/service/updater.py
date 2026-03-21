@@ -1,7 +1,6 @@
 # service/updater.py
 import asyncio
 from typing import List
-from search_service.service.di import container
 from search_service.text_processing.text_preparation import transforms_bert
 from qdrant_client.models import PointStruct
 from datetime import datetime, timedelta
@@ -12,10 +11,10 @@ log = logging.getLogger(__name__)
 
 
 class DataUpdater:
-    def __init__(self):
+    def __init__(self, container):
 
         self.container = container
-
+        log.debug(f"collections {self.container.vector_db.collections().values()}")
         # Берем последнюю запись среди всех коллекций
         self.date_from = datetime.fromtimestamp(
             max(
@@ -81,9 +80,9 @@ class DataUpdater:
                 input: product_points - словарь с данными в формате PointStruct по продуктам,
         """
         for product, points in product_points.items():
-            vector_db = self.container.vector_db.collection(product)
+            vector_db_collection = self.container.vector_db.collection(product)
 
-            vector_db.save_embeddings(points)
+            await vector_db_collection.save_embeddings(points)
 
             log.info(f"Saved {len(points)} points to product '{product}'")
 
