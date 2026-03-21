@@ -27,7 +27,7 @@ def _build_filter(filters: dict):
                 value = datetime.strptime(value, "%Y-%m-%d").timestamp()
             conditions.append(
                 models.FieldCondition(
-                    key="date_end",
+                    key="registry_date",
                     range=models.Range(gte=value)
                 )
             )
@@ -36,7 +36,7 @@ def _build_filter(filters: dict):
                 value = datetime.strptime(value, "%Y-%m-%d").timestamp()
             conditions.append(
                 models.FieldCondition(
-                    key="date_end",
+                    key="registry_date",
                     range=models.Range(lte=value)
                 )
             )

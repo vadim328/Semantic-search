@@ -2,7 +2,7 @@
 
 import numpy as np
 from rank_bm25 import BM25Okapi
-from text_processing.text_preparation import transforms_bm25
+from search_service.text_processing.text_preparation import transforms_bm25
 import logging
 
 log = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ class HybridScorer:
             results.append({
                 "id": hit.id,
                 "score": float(score),
-                "date_end": hit.payload.get("date_end"),
+                "registry_date": hit.payload.get("registry_date"),
             })
 
         return sorted(results, key=lambda x: x["score"], reverse=True)

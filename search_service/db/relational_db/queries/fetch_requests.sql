@@ -2,6 +2,7 @@ select
 	req.number,
 	req.client,
     c.product,
+    req.registry_date,
     req.date_end,
     req.problem as problem,
 	STRING_AGG(com.comments, ' ||| ' order by com.date_comments) as comments
@@ -15,5 +16,4 @@ group by
     req.number,
     req.problem,
     req.client,
-    c.product,
-    req.registry_date;
+    c.product;

@@ -38,13 +38,13 @@ async def startup_event():
     Config()  # Считываем файл на старте
 
     # создаём контейнер
-    container = await init_container()  # type: ignore
+    container = await init_container()
 
-    searcher = SemanticSearchEngine(container)  # type: ignore
-    updater = DataUpdater(container)  # type: ignore
+    searcher = SemanticSearchEngine(container)
+    updater = DataUpdater(container)
 
     # Запускаем обновления в фоне
-    asyncio.create_task(updater.run())  # type: ignore
+    asyncio.create_task(updater.run())
 
     search_routers = register_routes(
         searcher=searcher,

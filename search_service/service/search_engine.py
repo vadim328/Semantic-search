@@ -38,7 +38,7 @@ class SemanticSearchEngine:
                 "score": str(round(cr["score"] * 100)) + "%",
                 "responsible": ad["fio"],
                 "priority": ad["admission_prority"],
-                "date_end": str(timestamp_to_date(cr["date_end"])),
+                "registry_date": str(timestamp_to_date(cr["registry_date"])),
                 "url": "https://support.naumen.ru/sd/operator/#uuid:%s" % ad["servicecall"]
             })
 

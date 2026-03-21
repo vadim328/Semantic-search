@@ -14,7 +14,7 @@ class DataUpdater:
     def __init__(self, container):
 
         self.container = container
-        log.debug(f"collections {self.container.vector_db.collections().values()}")
+
         # Берем последнюю запись среди всех коллекций
         self.date_from = datetime.fromtimestamp(
             max(
@@ -126,6 +126,7 @@ class DataUpdater:
                     payload={
                         "text": row["problem"],
                         "client": row["client"],
+                        "registry_date": row["registry_date"].timestamp(),
                         "date_end": row["date_end"].timestamp()
                     }
                 )

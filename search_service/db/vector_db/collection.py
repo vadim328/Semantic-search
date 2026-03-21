@@ -34,9 +34,6 @@ class CollectionStore:
             "%Y-%m-%d"
         ).timestamp()
 
-    # =========================
-    # 🔥 ASYNC FACTORY
-    # =========================
     @classmethod
     async def create(
         cls,
@@ -52,9 +49,6 @@ class CollectionStore:
 
         return self
 
-    # =========================
-    # INIT
-    # =========================
     async def _init_collection(self, qdrant_config: dict):
         """
         Инициализация коллекции (без гонок)
@@ -85,15 +79,12 @@ class CollectionStore:
                 )
             )
         except Exception as e:
-            # ⚠️ защита от race condition (другая корутина могла создать)
+            # защита от race condition (другая корутина могла создать)
             log.warning(f"Collection creation race: {e}")
 
         # после — гарантированно читаем актуальное состояние
         await self._refresh_metadata()
 
-    # =========================
-    # METADATA
-    # =========================
     async def _refresh_metadata(self):
         """
         Полное обновление metadata (дорогое)
