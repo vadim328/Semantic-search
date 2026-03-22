@@ -12,6 +12,7 @@ class LLMModel:
     def __init__(
             self,
             model_path: str,
+            n_ctx: int,
             threads: int
     ):
 

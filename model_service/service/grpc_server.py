@@ -27,6 +27,7 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
 
         self.llm_model = LLMModel(
             model_path=config.llm["path"],
+            n_ctx=config.llm["n_ctx"],
             threads=config.llm["n_threads"]
         )
 

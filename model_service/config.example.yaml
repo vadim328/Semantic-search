@@ -3,6 +3,8 @@ service:
 
 llm:
   path:                         # Путь до LLM модели
+  n_threads:                    # Количество потоков для работы модели
+  n_ctx:                        # Длина контекста
 
 embedding:
   path:                         # Путь до Embedding модели
