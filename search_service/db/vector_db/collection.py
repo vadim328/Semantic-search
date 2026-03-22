@@ -39,17 +39,25 @@ class CollectionStore:
         cls,
         client: AsyncQdrantClient,
         collection: str,
+        vectors_param: List[dict],
         qdrant_config: dict,
         date_from: str
     ) -> "CollectionStore":
 
         self = cls(client, collection, date_from)
 
-        await self._init_collection(qdrant_config)
+        await self._init_collection(
+            vectors_param=vectors_param,
+            qdrant_config=qdrant_config
+        )
 
         return self
 
-    async def _init_collection(self, qdrant_config: dict):
+    async def _init_collection(
+            self,
+            vectors_param: List[dict],
+            qdrant_config: dict
+    ):
         """
         Инициализация коллекции (без гонок)
         """
@@ -61,15 +69,20 @@ class CollectionStore:
             await self._refresh_metadata()
             return
 
+        vectors_config = {}
+
+        for param in vectors_param:
+            vectors_config[param["name"]] = VectorParams(
+                size=param["size"],
+                distance=Distance.COSINE
+            )
+
         log.info(f"Creating collection '{self._collection}'")
 
         try:
             await self._client.create_collection(
                 collection_name=self._collection,
-                vectors_config=VectorParams(
-                    size=qdrant_config["vector_size"],
-                    distance=Distance.COSINE
-                ),
+                vectors_config=vectors_config,
                 hnsw_config=HnswConfigDiff(
                     m=qdrant_config["m_value"],
                     ef_construct=qdrant_config["ef_construct"],
@@ -142,9 +155,6 @@ class CollectionStore:
 
         self._metadata.points_count += len(points)
 
-    # =========================
-    # PUBLIC API
-    # =========================
     async def save_embeddings(self, points: List[PointStruct]):
         log.info(f"Saving {len(points)} embeddings")
 
@@ -157,11 +167,11 @@ class CollectionStore:
             self._update_metadata_fast(points)
 
         except Exception as e:
-            log.exception(f"Embedding unsuccessfully saved. Error - {e}")
+            log.error(f"Embedding unsuccessfully saved. Error - {e}")
 
     async def fetch_embeddings(
         self,
-        embedding,
+        query: tuple[str, list[float]],
         exact: bool,
         filters: dict,
     ):
@@ -169,7 +179,7 @@ class CollectionStore:
 
         hits = await self._client.query_points(
             collection_name=self._collection,
-            query=embedding,
+            query=query,
             limit=self._metadata.points_count if exact else 500,
             query_filter=query_filter,
             search_params=SearchParams(

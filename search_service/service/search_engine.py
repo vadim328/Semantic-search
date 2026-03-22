@@ -1,6 +1,7 @@
 from search_service.service.scorer import HybridScorer
 from search_service.text_processing.text_preparation import transforms_bert
 from search_service.service.utils import timestamp_to_date
+import asyncio
 import logging
 from search_service.config import Config
 
@@ -43,6 +44,23 @@ class SemanticSearchEngine:
             })
 
         return result
+
+    def merge_hits(*results):
+        """
+            Объединение полученных результатов и
+                их группировка по максимальному score
+        """
+        hits = {}
+
+        for res in results:
+            for point in res.points:
+                pid = point.id
+                score = point.score
+
+                if pid not in hits or hits[pid] < score:
+                    hits[pid] = score
+
+        return hits
 
     def _get_embedding(
             self,
@@ -110,16 +128,32 @@ class SemanticSearchEngine:
         else:
             embedding = self._get_embedding(product, query)
         try:
-            # Получаем эмбеддинги из нужной коллекции в взависимости от продукта
+            # Берем коллекцию для продукта
             vector_db_collection = self.container.vector_db.collection(product)
-            hits = await vector_db_collection.fetch_embeddings(
-                embedding,
-                exact,
-                filters
+
+            # Получаем результаты по трем векторам в коллекции
+            hits_original, hits_sum, hits_comments = await asyncio.gather(
+                vector_db_collection.fetch_embeddings(
+                    ("original", embedding),
+                    exact,
+                    filters
+                ),
+                vector_db_collection.fetch_embeddings(
+                    ("summary", embedding),
+                    exact,
+                    filters
+                ),
+                vector_db_collection.fetch_embeddings(
+                    ("comments", embedding),
+                    exact,
+                    filters
+                ),
             )
 
+            hits = self.merge_hits(hits_original, hits_sum, hits_comments)
+
             ranked = self.scorer(
-                hits=hits.points,
+                hits=hits,
                 query_text=query,
                 alpha=alpha
             )

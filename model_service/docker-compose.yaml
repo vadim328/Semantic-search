@@ -4,10 +4,11 @@ services:
 
   athena:
     build: .
-    container_name: model_service
+    container_name: athena
     image: athena
     ports:
       - "50051:50051"
     volumes:
       - ./model_service/models:/app/model_service/models
+      - ./model_service/config.yaml:/app/model_service/config.yaml
     restart: always

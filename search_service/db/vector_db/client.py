@@ -1,3 +1,4 @@
+from typing import List
 from qdrant_client import AsyncQdrantClient
 from search_service.db.vector_db.collection import CollectionStore
 
@@ -12,12 +13,14 @@ class VectorDB:
         self,
         date_from: str,
         collection_name: str,
+        vectors_param: List[dict],
         qdrant_config: dict
     ):
 
         store = await CollectionStore.create(
             client=self.client,
             collection=collection_name,
+            vectors_param=vectors_param,
             qdrant_config=qdrant_config,
             date_from=date_from
         )

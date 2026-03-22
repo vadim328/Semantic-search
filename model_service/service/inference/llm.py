@@ -18,7 +18,7 @@ class LLMModel:
 
         self.model = Llama(
             model_path=model_path,  # путь к квантованной модели
-            n_ctx=2048,             # длина контекста
+            n_ctx=n_ctx,            # длина контекста
             n_threads=threads,      # сколько потоков CPU использовать
             n_gpu_layers=0          # 0 если без GPU
         )

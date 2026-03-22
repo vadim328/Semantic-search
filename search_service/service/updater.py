@@ -1,7 +1,7 @@
 # service/updater.py
 import asyncio
 from typing import List
-from search_service.text_processing.text_preparation import transforms_bert
+from search_service.text_processing.text_preparation import transforms_bert, clean_comments
 from qdrant_client.models import PointStruct
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -88,21 +88,30 @@ class DataUpdater:
 
     def _get_embedding(self, row: dict):
         """
-            Метод для получения эмбеддинга запроса
+            Метод для получения эмбеддинга запроса по трем составляющим:
+                1) Оригинальный текст
+                2) Суммаризированный текст по описанию и комментариям
+                3) Комментарии
                 input:
                     row - запись с полями
                 output:
-                    vector - эмбеддинг запроса
+                    vectors - эмбеддинги запроса
         """
-        if row["product"] == "Naumen":
-            problem_summary = self.container.model_client.make_summarize(
-                problem=row["problem"],
-                comments=row["comments"]
-            )
-            return self.container.model_client.embed(problem_summary)
+        vectors = {}
 
-        text = transforms_bert(text=row["problem"])["text"]
-        return self.container.model_client.embed(text)
+        problem_text = transforms_bert(text=row["problem"])["text"]  # Чистим от лишнего
+        vectors["original"] = self.container.model_client.embed(problem_text)
+
+        problem_summary = self.container.model_client.make_summarize(
+            problem=row["problem"],
+            comments=row["comments"]
+        )
+        vectors["summary"] = self.container.model_client.embed(problem_summary)
+
+        comments = clean_comments(row["comments"])
+        vectors["comments"] = self.container.model_client.embed(comments)
+
+        return vectors
 
     def _build_points(self, rows: List[dict]) -> dict:
         """
@@ -117,12 +126,12 @@ class DataUpdater:
         product_points = defaultdict(list)
 
         for row in rows:
-            embedding = self._get_embedding(row)
+            vectors = self._get_embedding(row)
 
             product_points[row["product"]].append(
                 PointStruct(
                     id=int(row["number"]),
-                    vector=embedding,
+                    vector=vectors,
                     payload={
                         "text": row["problem"],
                         "client": row["client"],

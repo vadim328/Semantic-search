@@ -42,17 +42,17 @@ class Container:
         return self
 
     async def _build_collections(self):
-        log.info("Initializing vector DB collections")
 
-        collection_names = cfg.service["products"]
+        log.info("Initializing vector DB collections")
 
         tasks = [
             self.vector_db.make_collection(
                 collection_name=name,
-                qdrant_config=cfg.database["vector_db"]["params"],
-                date_from=cfg.database["vector_db"]["date_from"]
+                vectors_param=cfg.database["vector_db"]["vector_params"],
+                date_from=cfg.database["vector_db"]["date_from"],
+                qdrant_config=cfg.database["vector_db"]["params"]
             )
-            for name in collection_names
+            for name in cfg.service["products"]
         ]
 
         await asyncio.gather(*tasks)
