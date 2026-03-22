@@ -102,11 +102,11 @@ class DataUpdater:
         problem_text = transforms_bert(text=row["problem"])["text"]  # Чистим от лишнего
         vectors["original"] = self.container.model_client.embed(problem_text)
 
-        problem_summary = self.container.model_client.make_summarize(
-            problem=row["problem"],
+        '''problem_summary = self.container.model_client.make_summarize(
+            problem=problem_text,
             comments=row["comments"]
-        )
-        vectors["summary"] = self.container.model_client.embed(problem_summary)
+        )'''
+        vectors["summary"] = self.container.model_client.embed(problem_text)
 
         comments = clean_comments(row["comments"])
         vectors["comments"] = self.container.model_client.embed(comments)
@@ -126,6 +126,7 @@ class DataUpdater:
         product_points = defaultdict(list)
 
         for row in rows:
+            log.debug(f"Row - {row}")
             vectors = self._get_embedding(row)
 
             product_points[row["product"]].append(

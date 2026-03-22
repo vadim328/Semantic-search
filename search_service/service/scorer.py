@@ -28,12 +28,12 @@ class HybridScorer:
             return []
 
         # --- cosine ---
-        cosine_scores = np.array([h.score for h in hits])
+        cosine_scores = np.array([h["score"] for h in hits.values()])
 
         # --- BM25 ---
         tokenized_docs = [
-            transforms_bm25(h.payload["text"])["text"].split()
-            for h in hits
+            transforms_bm25(h["text"])["text"].split()
+            for h in hits.values()
         ]
 
         tokenized_query = transforms_bm25(query_text)["text"].split()
@@ -57,11 +57,11 @@ class HybridScorer:
 
         # --- pack ---
         results = []
-        for hit, score in zip(hits, hybrid_scores):
+        for (hit_id, data), score in zip(hits.items(), hybrid_scores):
             results.append({
-                "id": hit.id,
+                "id": hit_id,
                 "score": float(score),
-                "registry_date": hit.payload.get("registry_date"),
+                "registry_date": data["registry_date"]
             })
 
         return sorted(results, key=lambda x: x["score"], reverse=True)

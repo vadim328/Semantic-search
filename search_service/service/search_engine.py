@@ -45,20 +45,25 @@ class SemanticSearchEngine:
 
         return result
 
-    def merge_hits(*results):
+    @staticmethod
+    def merge_hits(result):
         """
             Объединение полученных результатов и
                 их группировка по максимальному score
         """
         hits = {}
 
-        for res in results:
+        for res in result:
             for point in res.points:
                 pid = point.id
                 score = point.score
 
-                if pid not in hits or hits[pid] < score:
-                    hits[pid] = score
+                if pid not in hits or hits[pid]["score"] < score:
+                    hits[pid] = {
+                        "score": score,
+                        "registry_date": point.payload.get("registry_date"),
+                        "text": point.payload.get("text")
+                    }
 
         return hits
 
@@ -134,23 +139,26 @@ class SemanticSearchEngine:
             # Получаем результаты по трем векторам в коллекции
             hits_original, hits_sum, hits_comments = await asyncio.gather(
                 vector_db_collection.fetch_embeddings(
-                    ("original", embedding),
-                    exact,
-                    filters
+                    vector_name="original",
+                    vector=embedding,
+                    exact=exact,
+                    filters=filters
                 ),
                 vector_db_collection.fetch_embeddings(
-                    ("summary", embedding),
-                    exact,
-                    filters
+                    vector_name="summary",
+                    vector=embedding,
+                    exact=exact,
+                    filters=filters
                 ),
                 vector_db_collection.fetch_embeddings(
-                    ("comments", embedding),
-                    exact,
-                    filters
+                    vector_name="comments",
+                    vector=embedding,
+                    exact=exact,
+                    filters=filters
                 ),
             )
 
-            hits = self.merge_hits(hits_original, hits_sum, hits_comments)
+            hits = self.merge_hits([hits_original, hits_sum, hits_comments])
 
             ranked = self.scorer(
                 hits=hits,

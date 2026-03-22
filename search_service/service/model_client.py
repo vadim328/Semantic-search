@@ -14,9 +14,11 @@ log = logging.getLogger(__name__)
 
 
 PROMPT_TEMPLATE = (
+    "<|im_start|>user\n"
     "Сформируй структурированное техническое резюме проблемы.\n\n"
     "Описание проблемы:\n{problem}\n\n"
-    "Комментарии:\n{comments}"
+    "Комментарии:\n{comments}<|im_end|>\n"
+    "<|im_start|>assistant\n"
 )
 
 
@@ -27,6 +29,8 @@ class ModelServiceClient:
         self.stub = model_pb2_grpc.ModelServiceStub(channel)
 
     def generate(self, prompt):
+
+        log.debug(f"Prompt for LLM - {prompt}")
         response = self.stub.Generate(
             model_pb2.GenerateRequest(
                 prompt=prompt,
@@ -59,6 +63,8 @@ class ModelServiceClient:
             comments=comments
         )
 
-        match = re.search(r"Сценарий проблемы:\s*(.*)", self.generate(prompt))
+        result = self.generate(prompt)
+        log.debug(f"Result sum - {result}")
+        match = re.search(r"Сценарий проблемы:\s*(.*)", result)
         scenario = match.group(1)
         return scenario

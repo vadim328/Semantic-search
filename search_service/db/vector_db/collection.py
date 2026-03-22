@@ -1,6 +1,7 @@
 from typing import List, Optional
 from qdrant_client.models import (
     PointStruct,
+    NamedVector,
     SearchParams,
     VectorParams,
     HnswConfigDiff,
@@ -171,7 +172,8 @@ class CollectionStore:
 
     async def fetch_embeddings(
         self,
-        query: tuple[str, list[float]],
+        vector_name: str,
+        vector: list[float],
         exact: bool,
         filters: dict,
     ):
@@ -179,7 +181,8 @@ class CollectionStore:
 
         hits = await self._client.query_points(
             collection_name=self._collection,
-            query=query,
+            query=vector,
+            using=vector_name,
             limit=self._metadata.points_count if exact else 500,
             query_filter=query_filter,
             search_params=SearchParams(

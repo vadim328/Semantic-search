@@ -26,10 +26,18 @@ class LLMModel:
     def generate(
             self,
             prompt: str,
-            max_tokens=512
+            max_tokens=512,
     ):
-
-        output = self.model(prompt, max_tokens=max_tokens)
+        output = self.model(
+            prompt,
+            max_tokens=max_tokens,
+            temperature=0.3,
+            min_p=0.15,
+            repeat_penalty=1.05,
+            top_p=1.0,
+            top_k=0
+        )
+        self.model.reset()  # вопрос-ответ, не чат
 
         # 3. Вывод результата
         return output['choices'][0]['text']
