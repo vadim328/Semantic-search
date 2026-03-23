@@ -1,0 +1,80 @@
+/* ==============================
+   Формы поиска и суммаризации
+   ============================== */
+form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px 20px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+}
+
+input,
+select {
+  background-color: #DCDCDC;
+  border: none;
+  margin-top: 5px;
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  color: #333;
+}
+
+/* Поле ввода текста для поиска */
+.query-field {
+  grid-column: 1 / -1;
+}
+
+.query-field input {
+  background-color: #DCDCDC;
+  border-radius: 12px;
+  border: none;
+  color: #333;
+  font-size: 16px;
+  padding: 12px;
+}
+
+.exact {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.exact input[type="checkbox"] {
+  margin: 0;
+  width: auto;
+}
+
+/* Поле ввода текста для суммаризации */
+
+.summary-field {
+  grid-column: 1 / -1;
+}
+
+.summary-field textarea {
+  background-color: #DCDCDC;
+  border-radius: 12px;
+  border: none;
+  color: #333;
+  width: 100%;
+  min-height: 150px;
+  padding: 12px;
+  font-size: 16px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+#summaryText::placeholder {
+  color: #999;
+  font-size: 16px;
+}

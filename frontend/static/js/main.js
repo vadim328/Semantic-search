@@ -71,9 +71,14 @@ productSelect.addEventListener("change", async () => {
 
 });
 
+const button = document.getElementById("button");
+
 form?.addEventListener("submit", async (e) => {
 
   e.preventDefault();
+
+  // старт анимации
+  button.classList.add("onclic");
 
   showLoading(result);
 
@@ -83,17 +88,25 @@ form?.addEventListener("submit", async (e) => {
     const data = await searchRequests(payload);
 
     hideLoading(result);
-
     renderTable(result, data, {
-      headers: {
-        id: "ID"
-      }
+      headers: { id: "ID" }
     });
+
+    // успех
+    button.classList.remove("onclic");
+    button.classList.add("validate");
+
+    setTimeout(() => {
+      button.classList.remove("validate");
+    }, 1500);
 
   } catch (err) {
 
     hideLoading(result);
     result.innerHTML = `<p>Ошибка: ${err.message}</p>`;
+
+    // вернуть кнопку назад
+    button.classList.remove("onclic");
 
   }
 

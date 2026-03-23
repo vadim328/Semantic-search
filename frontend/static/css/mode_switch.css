@@ -1,0 +1,24 @@
+/* ==============================
+   Переключатель вкладок (mode-switch)
+   ============================== */
+.mode-switch {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.mode-switch button {
+  width: auto;
+  display: inline-block;
+  padding: 10px 20px;
+  border: none;
+  background: #ddd;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.mode-switch button.active {
+  background: #6A5ACD;
+  color: white;
+}

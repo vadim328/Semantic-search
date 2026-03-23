@@ -1,141 +1,194 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <title>Поиск запросов</title>
+  <head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Поиск запросов</title>
 
-  <link rel="stylesheet" href="/static/css/styles.css">
+    <!-- Базовые стили страницы -->
+    <link rel="stylesheet" href="/static/css/base.css">
 
-</head>
+    <!-- Стили форм (поиск и суммаризация) -->
+    <link rel="stylesheet" href="/static/css/form.css">
 
-<body>
-  <div class="support-label">SupportAI</div>
-  <div class="mode-switch">
-    <button id="searchTab" class="active">Поиск</button>
-    <button id="summaryTab">Суммаризация</button>
-  </div>
+    <!-- Кнопки -->
+    <link rel="stylesheet" href="/static/css/button.css">
 
-  <!-- SEARCH MENU -->
-  <div id="searchSection">
+    <!-- Результат поиска -->
+    <link rel="stylesheet" href="/static/css/search_result.css">
 
-    <h2>Поиск запросов</h2>
+    <!-- Переключатели вкладок -->
+    <link rel="stylesheet" href="/static/css/mode_switch.css">
 
-    <form id="searchForm">
+    <!-- Панель помощи, логотип -->
+    <link rel="stylesheet" href="/static/css/help.css">
 
-    <label class="query-field">Запрос:
-      <input type="text" id="query" required>
-    </label>
+    <!-- Логотип -->
+    <link rel="stylesheet" href="/static/css/logo.css">
 
-    <label>Лимит:
-      <input type="number" id="limit" value="5">
-    </label>
+    <!-- Кастомный чекбокс -->
+    <link rel="stylesheet" href="/static/css/checkbox.css">
 
-    <label>Альфа:
-      <input type="number" step="0.01" id="alpha" value="0.5">
-    </label>
+    <!-- Режим поиска -->
+    <link rel="stylesheet" href="/static/css/mode_selector.css">
 
-    <label>Продукт:
-      <select id="product">
-        <option value="">(не выбрано)</option>
-      </select>
-    </label>
+  </head>
 
-    <label>Клиент:
-      <select id="client">
-        <option value="">(не выбрано)</option>
-      </select>
-    </label>
-
-    <label>Дата с:
-      <input type="date" id="date_from">
-    </label>
-
-    <label>Дата по:
-      <input type="date" id="date_to">
-    </label>
-
-    <div class="exact">
-      <input type="checkbox" id="exact" checked>
-      <label for="exact">Быстрый поиск</label>
+  <body>
+    <div class="support-label">SupportAI</div>
+    <div class="mode-switch">
+      <button id="searchTab" class="active">Поиск</button>
+      <button id="summaryTab">Суммаризация</button>
     </div>
 
-    <button type="submit">Отправить</button>
+    <!-- SEARCH MENU -->
+    <div id="searchSection">
 
-    </form>
+      <h2>Поиск запросов</h2>
 
-    <h3>Результат:</h3>
-    <div id="result"></div>
+      <form id="searchForm">
 
-    <!-- HELP PANEL -->
+      <label class="query-field">Запрос:
+        <input type="text" id="query" required>
+      </label>
 
-    <div class="help-wrapper">
-      <div class="help-icon">?</div>
+      <label>Лимит:
+        <input type="number" id="limit" value="5">
+      </label>
 
-      <div class="help-panel">
-        <h4>Описание параметров</h4>
+      <label>Альфа:
+        <input type="number" step="0.01" id="alpha" value="0.5">
+      </label>
 
-        <b>Запрос:</b>
-        <span>Текст, для которого требуется найти схожие по описанию запросы.</span>
+      <label>Продукт:
+        <select id="product">
+          <option value="">(не выбрано)</option>
+        </select>
+      </label>
 
-        <b>Лимит:</b>
-        <span>Ограничение на количество найденных совпадений в порядке убывания.</span>
+      <label>Клиент:
+        <select id="client">
+          <option value="">(не выбрано)</option>
+        </select>
+      </label>
 
-        <b>Альфа:</b>
-        <span>
-          Коэффициент балансировки (0–1).<br>
-          α = 0 — используется только NN.<br>
-          α = 1 — используется только BM25.
-        </span>
+      <!-- Фильтр по датам -->
+      <label>Дата с:
+        <input type="date" id="date_from">
+      </label>
 
-        <b>Продукт:</b>
-        <span>Название продукта, в коллекции которого будет осуществляться поиск</span>
+      <label>Дата по:
+        <input type="date" id="date_to">
+      </label>
 
+      <!-- Радиокнопки для выбора вержима поиска -->
+      <div class="mode-selector-wrapper">
+        <span class="mode-label">Режим поиска:</span>
+        <div class="mode-selector">
+          <input type="radio" name="mode" id="modeFull" value="full">
+          <label for="modeFull">Full</label>
 
-        <b>Фильтры для поиска запросов:</b>
+          <input type="radio" name="mode" id="modeBase" value="base" checked>
+          <label for="modeBase">Base</label>
 
-        <div class="help-subsection">
-          <b>Клиент</b>
-          <span>Полное наименование клиента в SD.</span>
-
-          <b>Дата с</b>
-          <span>Дата завершения запроса от.</span>
-
-          <b>Дата по</b>
-          <span>Дата завершения запроса до.</span>
+          <input type="radio" name="mode" id="modeComments" value="comments">
+          <label for="modeComments">Comments</label>
         </div>
+      </div>
 
-        <b>Быстрый поиск:</b>
-        <span>
-          True — быстрый поиск по индексам.<br>
-          False — Полный поиск по всей коллекции.
-        </span>
+      <!-- Чекбокс выбора режима работы -->
+      <div class="exact center">
+        <input type="checkbox" id="exact" checked/>
+        <label for="exact" class="toggle">
+          <span>
+            <svg width="10px" height="10px" viewBox="0 0 10 10">
+              <path d="M5,1 L5,1 C2.790861,1 1,2.790861 1,5 L1,5 C1,7.209139 2.790861,9 5,9 L5,9 C7.209139,9 9,7.209139 9,5 L9,5 C9,2.790861 7.209139,1 5,1 L5,9 L5,1 Z"></path>
+            </svg>
+          </span>
+        </label>
+        <span class="label-text">Быстрый поиск</span>
+      </div>
+
+      <div class="container">
+        <button id="button" type="submit">ПОИСК</button>
+      </div>
+
+      </form>
+
+      <h3>Результат:</h3>
+      <div id="result"></div>
+
+      <!-- HELP PANEL -->
+
+      <div class="help-wrapper">
+        <div class="help-icon">?</div>
+
+        <div class="help-panel">
+          <h4>Описание параметров</h4>
+
+          <b>Запрос:</b>
+          <span>Текст, для которого требуется найти схожие по описанию запросы.</span>
+
+          <b>Лимит:</b>
+          <span>Ограничение на количество найденных совпадений в порядке убывания.</span>
+
+          <b>Альфа:</b>
+          <span>
+            Коэффициент балансировки (0–1).<br>
+            α = 0 — используется только NN.<br>
+            α = 1 — используется только BM25.
+          </span>
+
+          <b>Продукт:</b>
+          <span>Название продукта, в коллекции которого будет осуществляться поиск</span>
+
+
+          <b>Фильтры для поиска запросов:</b>
+
+          <div class="help-subsection">
+            <b>Клиент</b>
+            <span>Полное наименование клиента в SD.</span>
+
+            <b>Дата с</b>
+            <span>Дата завершения запроса от.</span>
+
+            <b>Дата по</b>
+            <span>Дата завершения запроса до.</span>
+          </div>
+
+          <b>Быстрый поиск:</b>
+          <span>
+            True — быстрый поиск по индексам.<br>
+            False — Полный поиск по всей коллекции.
+          </span>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- SUMMARIZATION MENU -->
+    <!-- SUMMARIZATION MENU -->
 
-  <div id="summarySection" style="display: none;">
+    <div id="summarySection" style="display: none;">
 
-    <h2>Суммаризация</h2>
+      <h2>Суммаризация</h2>
 
-    <form id="summaryForm">
+      <form id="summaryForm">
 
-    <label class="summary-field">
-      <textarea id="summaryText" placeholder="Введите текст для суммаризации..." required></textarea>
-    </label>
+      <label class="summary-field">
+        <textarea id="summaryText" placeholder="Введите текст для суммаризации..." required></textarea>
+      </label>
 
-    <button type="submit">Суммаризировать</button>
+      <div class="container">
+        <button id="button_sum" class="button" type="submit">СУММАРИЗИРОВАТЬ</button>
+      </div>
 
-    </form>
+      </form>
 
-    <h3>Результат:</h3>
-    <div id="summaryResult"></div>
+      <h3>Результат:</h3>
+      <div id="summaryResult"></div>
 
-  </div>
+    </div>
 
-  <script type="module" src="/static/js/main.js"></script>
+    <script type="module" src="/static/js/main.js"></script>
 
-</body>
+  </body>
 </html>

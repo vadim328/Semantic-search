@@ -1,0 +1,19 @@
+/* ==============================
+   Основные стили страницы
+   ============================== */
+
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  max-width: 1000px;
+  margin: 40px auto;
+  background: FloralWhite;
+  padding: 25px 30px 50px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+h2, h3, h4 {
+  font-weight: 600;
+  color: #222;
+  line-height: 1.3;
+}

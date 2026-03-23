@@ -1,0 +1,38 @@
+/* ==============================
+   Режим поиска
+   ============================== */
+
+/* общий контейнер */
+.mode-selector {
+  display: flex;
+  justify-content: flex-start;
+  margin: 20px 0;
+  gap: 10px;
+}
+
+/* скрываем стандартные радиокнопки */
+.mode-selector input[type="radio"] {
+  display: none;
+}
+
+/* стилизуем label как кнопки */
+.mode-selector label {
+  padding: 8px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  background: #DCDCDC;
+  color: #333;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+/* hover эффект */
+.mode-selector label:hover {
+  background: #C0BFFF;
+}
+
+/* выделенный режим */
+.mode-selector input[type="radio"]:checked + label {
+  background: #6A5ACD;
+  color: white;
+}

@@ -15,7 +15,7 @@ class SemanticSearchEngine:
         self.scorer = HybridScorer()
         self.threshold = cfg["service"]["threshold"]
 
-        # TODO Можно попробовать присвоить значение переменной класса
+        # TODO Можно перенести в конфиг
         self.SEARCH_MODES = {
             "full": ["original", "summary", "comments"],
             "base": ["original", "summary"],

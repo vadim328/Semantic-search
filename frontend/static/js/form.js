@@ -11,7 +11,11 @@ export function buildPayloadSearch() {
   const alpha = document.getElementById("alpha").value;
   if (alpha) payload.alpha = Number(alpha);
 
-  payload.exact = !document.getElementById("exact").checked;
+  // Режим поиска (Full | Base | Comments)
+  const selectedMode = document.querySelector('input[name="mode"]:checked').value;
+  payload.mode = selectedMode;
+
+  payload.exact = document.getElementById("exact").checked;
 
   const filter = {};
 
