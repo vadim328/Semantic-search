@@ -15,6 +15,13 @@ class SemanticSearchEngine:
         self.scorer = HybridScorer()
         self.threshold = cfg["service"]["threshold"]
 
+        # TODO Можно попробовать присвоить значение переменной класса
+        self.SEARCH_MODES = {
+            "full": ["original", "summary", "comments"],
+            "base": ["original", "summary"],
+            "comments": ["comments"],
+        }
+
     async def generate_result(self, calc_result: list[dict]):
         """
             Формирует итоговый результат поиска
@@ -96,6 +103,7 @@ class SemanticSearchEngine:
             self,
             query: str,
             product: str,
+            search_mode: str,
             limit=5,
             alpha=0.5,
             exact=True,
@@ -136,9 +144,8 @@ class SemanticSearchEngine:
             # Берем коллекцию для продукта
             vector_db_collection = self.container.vector_db.collection(product)
 
-            # TODO Можно попробовать присвоить значение переменной класса
-            # Получаем результаты по трем векторам в коллекции
-            vector_names = ["original", "summary", "comments"]
+            # Получаем результаты по векторам в коллекции, в зависимости от режима
+            vector_names = self.SEARCH_MODES[search_mode]
 
             search_tasks = [
                 vector_db_collection.fetch_embeddings(

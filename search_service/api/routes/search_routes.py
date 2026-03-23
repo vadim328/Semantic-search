@@ -36,6 +36,7 @@ def create_search_routes(searcher: SemanticSearchEngine) -> APIRouter:
                     query: Текст, по которобу будут искаться схожие запросы
                     limit: Ограничение на количество найденых совпадений в порядке убывания
                     alpha: коэффициент балансировки, принимающий значения в диапазоне от 0 до 1
+                    mode: Режим поиска - base, full, comments
                     product: Название продукта для осуществления поиска
                             - При α = 0 полностью используется поиск по косинусной схожести
                             - При α = 1 полностью используется поиск через алгоритм BM25
@@ -54,6 +55,7 @@ def create_search_routes(searcher: SemanticSearchEngine) -> APIRouter:
         product = data.get("product")
         limit = data.get("limit", 5)
         alpha = data.get("alpha", 0.5)
+        search_mode = data.get("mode", "base")
         exact = data.get("exact", False)
         filters = data.get("filter", {})
 
@@ -62,10 +64,11 @@ def create_search_routes(searcher: SemanticSearchEngine) -> APIRouter:
             f"product: {product}, "
             f"limit: {limit}, "
             f"alpha: {alpha}, "
+            f"search mode: {search_mode}, "
             f"exact: {exact}",
         )
 
-        result = await searcher.search(query, product, limit, alpha, exact, filters)
+        result = await searcher.search(query, product, search_mode, limit, alpha, exact, filters)
         log.info(f"Result search request : {result}")
 
         return JSONResponse(result)
