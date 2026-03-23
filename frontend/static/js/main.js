@@ -71,14 +71,14 @@ productSelect.addEventListener("change", async () => {
 
 });
 
-const button = document.getElementById("button");
+const btnSearch = document.getElementById("button-search");
 
 form?.addEventListener("submit", async (e) => {
 
   e.preventDefault();
 
   // старт анимации
-  button.classList.add("onclic");
+  btnSearch.classList.add("onclic");
 
   showLoading(result);
 
@@ -93,11 +93,11 @@ form?.addEventListener("submit", async (e) => {
     });
 
     // успех
-    button.classList.remove("onclic");
-    button.classList.add("validate");
+    btnSearch.classList.remove("onclic");
+    btnSearch.classList.add("validate");
 
     setTimeout(() => {
-      button.classList.remove("validate");
+      btnSearch.classList.remove("validate");
     }, 1500);
 
   } catch (err) {
@@ -106,18 +106,21 @@ form?.addEventListener("submit", async (e) => {
     result.innerHTML = `<p>Ошибка: ${err.message}</p>`;
 
     // вернуть кнопку назад
-    button.classList.remove("onclic");
+    btnSearch.classList.remove("onclic");
 
   }
 
 });
 
+const btnSum = document.getElementById("button-sum");
 const summaryForm = document.getElementById("summaryForm");
 const summaryResult = document.getElementById("summaryResult");
 
 summaryForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  // анимация для кнопки суммаризации
+  btnSum.classList.add("onclic");
   summaryResult.innerHTML = "Загрузка...";
 
   try {
@@ -127,8 +130,17 @@ summaryForm?.addEventListener("submit", async (e) => {
 
     summaryResult.innerText = data.summary;
 
+    // успех
+    btnSum.classList.remove("onclic");
+    btnSum.classList.add("validate");
+
+    setTimeout(() => {
+      btnSum.classList.remove("validate");
+    }, 1500);
+
   } catch (err) {
     summaryResult.innerHTML = `<p>Ошибка: ${err.message}</p>`;
+    btnSum.classList.remove("onclic");  // ← сброс анимации при ошибке
   }
 });
 

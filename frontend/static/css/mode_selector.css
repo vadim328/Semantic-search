@@ -18,7 +18,7 @@
 /* стилизуем label как кнопки */
 .mode-selector label {
   padding: 8px 20px;
-  border-radius: 12px;
+  border-radius: 18px;
   cursor: pointer;
   background: #DCDCDC;
   color: #333;

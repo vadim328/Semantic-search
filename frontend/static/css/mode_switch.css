@@ -13,9 +13,19 @@
   display: inline-block;
   padding: 10px 20px;
   border: none;
-  background: #ddd;
+  background: #DCDCDC;
   cursor: pointer;
   border-radius: 4px;
+  font-family: 'Inter', Arial, sans-serif;  /* Inter */
+  font-weight: 600;                          /* Полужирный */
+  color: #333;                               /* Тёмно-серый цвет */
+  font-size: 14px;                           /* Размер шрифта (опционально) */
+  transition: all 0.2s ease;                 /* Плавный переход для ховера */
+}
+
+/* hover эффект */
+.mode-switch button:hover {
+  background: #C0BFFF;
 }
 
 .mode-switch button.active {
