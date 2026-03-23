@@ -46,14 +46,14 @@ class SemanticSearchEngine:
         return result
 
     @staticmethod
-    def merge_hits(result):
+    def merge_hits(results):
         """
             Объединение полученных результатов и
                 их группировка по максимальному score
         """
         hits = {}
 
-        for res in result:
+        for res in results:
             for point in res.points:
                 pid = point.id
                 score = point.score
@@ -136,29 +136,24 @@ class SemanticSearchEngine:
             # Берем коллекцию для продукта
             vector_db_collection = self.container.vector_db.collection(product)
 
+            # TODO Можно попробовать присвоить значение переменной класса
             # Получаем результаты по трем векторам в коллекции
-            hits_original, hits_sum, hits_comments = await asyncio.gather(
-                vector_db_collection.fetch_embeddings(
-                    vector_name="original",
-                    vector=embedding,
-                    exact=exact,
-                    filters=filters
-                ),
-                vector_db_collection.fetch_embeddings(
-                    vector_name="summary",
-                    vector=embedding,
-                    exact=exact,
-                    filters=filters
-                ),
-                vector_db_collection.fetch_embeddings(
-                    vector_name="comments",
-                    vector=embedding,
-                    exact=exact,
-                    filters=filters
-                ),
-            )
+            vector_names = ["original", "summary", "comments"]
 
-            hits = self.merge_hits([hits_original, hits_sum, hits_comments])
+            search_tasks = [
+                vector_db_collection.fetch_embeddings(
+                    vector_name=name,
+                    vector=embedding,
+                    exact=exact,
+                    filters=filters
+                )
+                for name in vector_names
+            ]
+
+            # асинхронно делаем запросы для поиска
+            results = await asyncio.gather(*search_tasks)
+
+            hits = self.merge_hits(results)
 
             ranked = self.scorer(
                 hits=hits,
