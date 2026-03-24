@@ -103,7 +103,7 @@ class DataUpdater:
         vectors["original"] = await self.container.model_client.embed(problem_text)
 
         '''problem_summary = self.container.model_client.make_summarize(
-            problem=problem_text,
+            problem=row["problem"],
             comments=row["comments"]
         )'''
         vectors["summary"] = await self.container.model_client.embed(problem_text)

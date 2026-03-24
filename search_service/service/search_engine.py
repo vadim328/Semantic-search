@@ -76,27 +76,30 @@ class SemanticSearchEngine:
 
     async def _get_embedding(
             self,
-            product: str,
-            problem: str,
-            comments=None,
+            query: str,
     ):
-        # Временная функция
         """
             Метод для получения эмбеддинга запроса
                 input:
-                    row - запись с полями
+                    query - Искомый текст или номер запроса
                 output:
                     vector - эмбеддинг запроса
         """
-        if product == "Naumen":
-
-            problem_summary = await self.container.model_client.make_summarize(
-                problem=problem,
-                comments=comments
+        # Если введен номер запроса, а не текст для поиска
+        if query.isdigit():
+            req_data = await self.container.relational_db.fetch_request_data(
+                {"number": int(query)}
             )
-            return await self.container.model_client.embed(problem_summary)
+            req_data = req_data[0]  # Берем первую и единствуенную строку
 
-        text = transforms_bert(text=problem)["text"]
+            query = await self.container.model_client.make_summarize(
+                problem=req_data["problem"],
+                comments=req_data["comments"]
+            )
+
+            return await self.container.model_client.embed(query)
+
+        text = transforms_bert(text=query)["text"]
         return await self.container.model_client.embed(text)
 
     async def search(
@@ -127,19 +130,7 @@ class SemanticSearchEngine:
         if filters is None:
             filters = {}
 
-        # Если введен номер запроса, а не текст для поиска
-        if query.isdigit():
-            req_data = await self.container.relational_db.fetch_request_data(
-                {"number": int(query)}
-            )
-            req_data = req_data[0]  # Берем первую и единствуенную строку
-            embedding = await self._get_embedding(
-                product,
-                req_data["problem"],
-                req_data["comments"]
-            )
-        else:
-            embedding = await self._get_embedding(product, query)
+        embedding = self._get_embedding(query)
         try:
             # Берем коллекцию для продукта
             vector_db_collection = self.container.vector_db.collection(product)

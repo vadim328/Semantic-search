@@ -20,7 +20,6 @@ def create_summarize_router(model_client: ModelServiceClient) -> APIRouter:
             text: Комментарии запроса
         """
         data = await request.json()
-        log.info(f"Request on summarization, data {data}")
 
         validate_params(data, ["text"])
 
