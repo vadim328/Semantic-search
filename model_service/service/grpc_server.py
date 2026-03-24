@@ -12,13 +12,12 @@ from model_service.service.config import Config
 
 setup_logging()  # настройка логирования
 log = logging.getLogger(__name__)
+config = Config()
 
 
 class ModelService(model_pb2_grpc.ModelServiceServicer):
 
     def __init__(self):
-
-        config = Config()
 
         self.embedding_model = EmbeddingModel(
             config.embedding["path"],
@@ -59,7 +58,9 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
 def serve():
 
     server = grpc.server(
-        futures.ThreadPoolExecutor(max_workers=4)
+        futures.ThreadPoolExecutor(
+            max_workers=config.service["max_workers"]
+        )
     )
 
     model_pb2_grpc.add_ModelServiceServicer_to_server(

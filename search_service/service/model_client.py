@@ -1,5 +1,5 @@
 import re
-import grpc
+import grpc.aio
 import numpy as np
 
 from contracts.generated import model_pb2
@@ -25,13 +25,13 @@ PROMPT_TEMPLATE = (
 class ModelServiceClient:
 
     def __init__(self, url):
-        channel = grpc.insecure_channel(url)
+        channel = grpc.aio.insecure_channel(url)
         self.stub = model_pb2_grpc.ModelServiceStub(channel)
 
-    def generate(self, prompt):
+    async def generate(self, prompt):
 
         log.debug(f"Prompt for LLM - {prompt}")
-        response = self.stub.Generate(
+        response = await self.stub.Generate(
             model_pb2.GenerateRequest(
                 prompt=prompt,
                 max_tokens=512
@@ -39,10 +39,10 @@ class ModelServiceClient:
         )
         return response.text
 
-    def embed(self, texts):
+    async def embed(self, texts):
         if isinstance(texts, str):
             texts = [texts]
-        response = self.stub.Embed(
+        response = await self.stub.Embed(
             model_pb2.EmbeddingRequest(
                 texts=texts
             )
@@ -51,7 +51,7 @@ class ModelServiceClient:
         query_vector = np.array(response.embeddings[0].vector, dtype=np.float32)
         return query_vector
 
-    def make_summarize(self, problem, comments):
+    async def make_summarize(self, problem, comments):
 
         if comments:
             comments = clean_comments(comments)
@@ -63,7 +63,7 @@ class ModelServiceClient:
             comments=comments
         )
 
-        result = self.generate(prompt)
+        result = await self.generate(prompt)
         log.debug(f"Result sum - {result}")
         match = re.search(r"Сценарий проблемы:\s*(.*)", result)
         scenario = match.group(1)

@@ -29,7 +29,7 @@ def create_summarize_router(model_client: ModelServiceClient) -> APIRouter:
 
         log.info(f"Request on summarization {text}")
 
-        summary = model_client.make_summarize(
+        summary = await model_client.make_summarize(
             problem=text,
             comments=comments
         )

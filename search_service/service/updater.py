@@ -86,7 +86,7 @@ class DataUpdater:
 
             log.info(f"Saved {len(points)} points to product '{product}'")
 
-    def _get_embedding(self, row: dict):
+    async def _get_embedding(self, row: dict):
         """
             Метод для получения эмбеддинга запроса по трем составляющим:
                 1) Оригинальный текст
@@ -100,20 +100,20 @@ class DataUpdater:
         vectors = {}
 
         problem_text = transforms_bert(text=row["problem"])["text"]  # Чистим от лишнего
-        vectors["original"] = self.container.model_client.embed(problem_text)
+        vectors["original"] = await self.container.model_client.embed(problem_text)
 
         '''problem_summary = self.container.model_client.make_summarize(
             problem=problem_text,
             comments=row["comments"]
         )'''
-        vectors["summary"] = self.container.model_client.embed(problem_text)
+        vectors["summary"] = await self.container.model_client.embed(problem_text)
 
         comments = clean_comments(row["comments"])
-        vectors["comments"] = self.container.model_client.embed(comments)
+        vectors["comments"] = await self.container.model_client.embed(comments)
 
         return vectors
 
-    def _build_points(self, rows: List[dict]) -> dict:
+    async def _build_points(self, rows: List[dict]) -> dict:
         """
             Преобразование полученных строк из реляционной БД
             в нужный формат для сохранения в векторную БД
@@ -127,7 +127,7 @@ class DataUpdater:
 
         for row in rows:
             log.debug(f"Row - {row}")
-            vectors = self._get_embedding(row)
+            vectors = await self._get_embedding(row)
 
             product_points[row["product"]].append(
                 PointStruct(
@@ -159,7 +159,7 @@ class DataUpdater:
 
         rows = self.container.relational_db.get_data()
 
-        product_points = self._build_points(rows)
+        product_points = await self._build_points(rows)
 
         await self._save_points(product_points)
 

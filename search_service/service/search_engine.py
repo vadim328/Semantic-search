@@ -74,7 +74,7 @@ class SemanticSearchEngine:
 
         return hits
 
-    def _get_embedding(
+    async def _get_embedding(
             self,
             product: str,
             problem: str,
@@ -90,14 +90,14 @@ class SemanticSearchEngine:
         """
         if product == "Naumen":
 
-            problem_summary = self.container.model_client.make_summarize(
+            problem_summary = await self.container.model_client.make_summarize(
                 problem=problem,
                 comments=comments
             )
-            return self.container.model_client.embed(problem_summary)
+            return await self.container.model_client.embed(problem_summary)
 
         text = transforms_bert(text=problem)["text"]
-        return self.container.model_client.embed(text)
+        return await self.container.model_client.embed(text)
 
     async def search(
             self,
@@ -133,13 +133,13 @@ class SemanticSearchEngine:
                 {"number": int(query)}
             )
             req_data = req_data[0]  # Берем первую и единствуенную строку
-            embedding = self._get_embedding(
+            embedding = await self._get_embedding(
                 product,
                 req_data["problem"],
                 req_data["comments"]
             )
         else:
-            embedding = self._get_embedding(product, query)
+            embedding = await self._get_embedding(product, query)
         try:
             # Берем коллекцию для продукта
             vector_db_collection = self.container.vector_db.collection(product)
