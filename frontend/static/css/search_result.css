@@ -9,15 +9,29 @@
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate; /* 👈 важно */
+  border-spacing: 0;         /* чтобы не было зазоров */
   margin-top: 20px;
   background: white;
+  border: 2px solid #cbd5e1;
+  border-radius: 18px;       /* 👈 скругление */
+  overflow: hidden;          /* 👈 обрезает углы */
+}
+
+td:nth-child(1),
+td:nth-child(2),
+td:nth-child(5) {
+  text-align: center;
+}
+
+td:nth-child(4) {
+  text-align: center;
 }
 
 th,
 td {
   padding: 10px;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid #ddd;
 }
 

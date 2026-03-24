@@ -1,0 +1,74 @@
+/* Общий стиль кастомного селекта */
+.custom-select {
+  position: relative;
+  width: 100%;
+  border: 2px solid #cbd5e1;
+  border-radius: 18px;
+  background: white;
+  cursor: pointer;
+  user-select: none;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+/* Поле с выбранным значением */
+.custom-select .selected {
+  padding: 8px 16px;
+  position: relative;      /* для стрелки */
+  padding-right: 30px;     /* пространство под стрелку */
+}
+
+/* Стрелка вниз справа */
+.custom-select .selected::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #333;  /* цвет стрелки */
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Стрелка меняет направление при открытом селекте */
+.custom-select.open .selected::after {
+  border-top: none;
+  border-bottom: 6px solid #333;
+}
+
+/* Список опций */
+.custom-select .options {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  background: white;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 4px 15px rgba(106, 90, 205, 0.3); /* фиолетовая тень */
+  z-index: 100;
+  margin-top: 4px;
+  padding: 0;
+  list-style: none;
+}
+
+/* Открытый список */
+.custom-select.open .options {
+  display: block;
+}
+
+/* Опции */
+.custom-select .options li {
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.custom-select .options li:hover {
+  background-color: #f0f0ff;
+}

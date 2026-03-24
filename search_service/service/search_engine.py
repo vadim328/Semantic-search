@@ -130,7 +130,7 @@ class SemanticSearchEngine:
         if filters is None:
             filters = {}
 
-        embedding = self._get_embedding(query)
+        embedding = await self._get_embedding(query)
         try:
             # Берем коллекцию для продукта
             vector_db_collection = self.container.vector_db.collection(product)

@@ -42,6 +42,8 @@ select {
   padding: 12px;
 }
 
+/* Чекбокс */
+
 .exact {
   grid-column: 1 / -1;
   display: flex;
