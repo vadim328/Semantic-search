@@ -18,10 +18,6 @@ RUN pip install --no-cache-dir \
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# важно: папка с моделями
-# (или монтируется volume)
-# /app/models/
-
 EXPOSE 50051
 
 CMD ["python", "-m", "model_service.service.grpc_server"]
