@@ -27,14 +27,14 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
         self.llm_model = LLMModel(
             model_path=config.llm["path"],
             n_ctx=config.llm["n_ctx"],
-            threads=config.llm["n_threads"]
+            threads=config.llm["n_threads"],
+            generate_params=config.llm["generate"]
         )
 
     def Generate(self, request, context):
 
         result = self.llm_model.generate(
             request.prompt,
-            max_tokens=request.max_tokens
         )
 
         return model_pb2.GenerateResponse(text=result)

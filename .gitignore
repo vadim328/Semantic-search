@@ -8,3 +8,4 @@ test.py
 config.yaml
 *test.sql
 onnx/
+train_model/

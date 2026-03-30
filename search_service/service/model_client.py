@@ -1,6 +1,7 @@
 import re
 import grpc.aio
 import numpy as np
+import json
 
 from contracts.generated import model_pb2
 from contracts.generated import model_pb2_grpc
@@ -14,11 +15,10 @@ log = logging.getLogger(__name__)
 
 
 PROMPT_TEMPLATE = (
-    "<|im_start|>user\n"
     "Сформируй структурированное техническое резюме проблемы.\n\n"
     "Описание проблемы:\n{problem}\n\n"
-    "Комментарии:\n{comments}<|im_end|>\n"
-    "<|im_start|>assistant\n"
+    "Комментарии:\n{comments}\n"
+    "Ответ:\n"
 )
 
 
@@ -65,6 +65,5 @@ class ModelServiceClient:
 
         result = await self.generate(prompt)
         log.debug(f"Result sum - {result}")
-        match = re.search(r"Сценарий проблемы:\s*(.*)", result)
-        scenario = match.group(1)
+        scenario = json.loads(result)["Сценарий проблемы"]
         return scenario

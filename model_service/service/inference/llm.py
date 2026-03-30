@@ -13,7 +13,8 @@ class LLMModel:
             self,
             model_path: str,
             n_ctx: int,
-            threads: int
+            threads: int,
+            generate_params: dict,
     ):
 
         self.model = Llama(
@@ -23,19 +24,19 @@ class LLMModel:
             n_gpu_layers=0          # 0 если без GPU
         )
 
+        self.generate_params = generate_params
+
     def generate(
             self,
             prompt: str,
-            max_tokens=512,
     ):
         output = self.model(
             prompt,
-            max_tokens=max_tokens,
-            temperature=0.3,
-            min_p=0.15,
-            repeat_penalty=1.05,
-            top_p=1.0,
-            top_k=0
+            max_tokens=self.generate_params["max_tokens"],
+            temperature=self.generate_params["temperature"],
+            top_p=self.generate_params["top_p"],
+            top_k=self.generate_params["top_k"],
+            repeat_penalty=self.generate_params["repeat_penalty"],
         )
         self.model.reset()  # вопрос-ответ, не чат
 
