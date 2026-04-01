@@ -9,14 +9,14 @@ from search_service.config import Config
 import logging
 
 log = logging.getLogger(__name__)
-cfg = Config().data
+cfg = Config().data["service"]["updater"]
 
 
 class DataUpdater:
     def __init__(self, container):
 
         self.container = container
-        self.max_concurrent = cfg["service"]["updater"]["max_concurrent"]
+        self.max_concurrent = cfg["max_concurrent"]
 
         # Берем последнюю запись среди всех коллекций
         self.date_from = datetime.fromtimestamp(

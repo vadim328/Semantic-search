@@ -11,7 +11,7 @@ left join comments com on req.number = com.number
 left join contract c on req.contract=c.id
 where req.date_end >= :from_date
 	and req.date_end < :to_date
-	and (c.product = 'Naumen Erudite' or c.product = 'NCC')
+	and c.product in ('Naumen Erudite', 'NCC')
 group by
     req.number,
     req.problem,
