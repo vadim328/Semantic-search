@@ -5,16 +5,18 @@ from search_service.text_processing.text_preparation import transforms_bert, tra
 from qdrant_client.models import PointStruct
 from datetime import datetime, timedelta
 from collections import defaultdict
+from search_service.config import Config
 import logging
 
 log = logging.getLogger(__name__)
+cfg = Config().data
 
 
 class DataUpdater:
     def __init__(self, container):
 
         self.container = container
-        self.max_concurrent = 1
+        self.max_concurrent = cfg["service"]["updater"]["max_concurrent"]
 
         # Берем последнюю запись среди всех коллекций
         self.date_from = datetime.fromtimestamp(
@@ -107,11 +109,11 @@ class DataUpdater:
             transforms_bert(text=row["problem"])["text"]
         )
 
-        '''problem_summary = await self.container.model_client.make_summarize(
+        problem_summary = await self.container.model_client.make_summarize(
             problem=transforms_nn(text=row["problem"])["text"],
             comments=comments
-        )'''
-        vectors["summary"] = await self.container.model_client.embed(transforms_bert(text=row["problem"])["text"])
+        )
+        vectors["summary"] = await self.container.model_client.embed(problem_summary)
 
         vectors["comments"] = await self.container.model_client.embed(comments)
 

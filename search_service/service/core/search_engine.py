@@ -13,7 +13,7 @@ class SemanticSearchEngine:
     def __init__(self, container):
         self.container = container
         self.scorer = HybridScorer()
-        self.threshold = cfg["service"]["threshold"]
+        self.threshold = cfg["service"]["searcher"]["threshold"]
 
         # TODO Можно перенести в конфиг
         self.SEARCH_MODES = {
@@ -57,6 +57,11 @@ class SemanticSearchEngine:
         """
             Объединение полученных результатов и
                 их группировка по максимальному score
+
+            input:
+                list[list] - Результаты по векторам
+            output:
+                list - Объединенные результаты
         """
         hits = {}
 
@@ -174,6 +179,8 @@ class SemanticSearchEngine:
     def get_metadata(self, product):
         """
             Формирует и передает метаданные
+                :input:
+                    str: Название продукта
                 :output:
                     dict: метаданные
         """

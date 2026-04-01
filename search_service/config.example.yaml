@@ -4,18 +4,27 @@ database:
   vector_db:
     url: ""
     date_from: ""
+    vector_params:
+      - name: ""
+        size:
+      - name: ""
+        size:
+      - name: ""
+        size:
     params:
-      vector_size:           # Размер вектора для сохранения
-      m_value:               # Сколько k-ближайших соседей хранить
-      ef_construct:          # сколько кандидатов анализируется при вставке точки
-      full_scan_threshold:   # Количество точек когда не нужен hnsw
-      max_indexing_threads:  # Количество потоков, 0 - авто
-      on_disk:               # где хранить граф
+      m_value:                  # Сколько k-ближайших соседей хранить
+      ef_construct:             # Сколько кандидатов анализируется при вставке точки
+      full_scan_threshold:      # Количество точек когда не нужен hnsw
+      max_indexing_threads:     # Количество потоков, 0 - авто
+      on_disk:                  # где хранить граф
 
 model:
-  url: ""
+  url: ""                       # URL сервиса с моделями
 
 service:
-  threshold:                 # Доля схожести векторов
-  logging_level:             # Уровень логирование
-  products:                  # Список продуктов для создания коллекций
+  logging_level: "INFO"
+  products: []
+  searcher:
+    threshold:
+  updater:
+    max_concurrent:

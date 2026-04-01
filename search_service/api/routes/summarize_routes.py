@@ -18,7 +18,7 @@ def create_summarize_router(model_client: ModelServiceClient) -> APIRouter:
         POST - метод для суммаризации текста
         :input:
             text: строка, которую нужно суммаризировать
-            text: Комментарии запроса
+            comments: Комментарии запроса
         """
         data = await request.json()
 
