@@ -5,7 +5,12 @@ export function buildPayloadSearch() {
   };
 
   const productSelect = document.getElementById("product-select");
-  payload.product = productSelect?.querySelector(".selected")?.textContent || "";
+  const selectedProduct = productSelect?.querySelector(".selected")?.textContent || "";
+  if (selectedProduct && selectedProduct !== "(не выбрано)") {
+    payload.product = selectedProduct;
+  } else {
+    throw new Error("Продукт обязателен"); // если нужно, чтобы был обязательный
+  }
 
   const limit = document.getElementById("limit").value;
   if (limit) payload.limit = Number(limit);
@@ -22,8 +27,10 @@ export function buildPayloadSearch() {
   const filter = {};
 
   const clientSelect = document.getElementById("client-select");
-  const client = clientSelect?.querySelector(".selected")?.textContent;
-  if (client) filter.client = client;
+  const selectedClient = clientSelect?.querySelector(".selected")?.textContent;
+  if (selectedClient && selectedClient !== "(не выбрано)") {
+    filter.client = selectedClient;
+  }
 
   ["date_from", "date_to"].forEach(id => {
 

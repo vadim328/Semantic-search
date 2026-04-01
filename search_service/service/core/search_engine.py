@@ -138,6 +138,8 @@ class SemanticSearchEngine:
             # Получаем результаты по векторам в коллекции, в зависимости от режима
             vector_names = self.SEARCH_MODES[search_mode]
 
+            log.info(f"Search text - {query} in product collection - {product}, vector names - {vector_names}")
+
             search_tasks = [
                 vector_db_collection.fetch_embeddings(
                     vector_name=name,
@@ -152,6 +154,8 @@ class SemanticSearchEngine:
             results = await asyncio.gather(*search_tasks)
 
             hits = self.merge_hits(results)
+
+            log.info(f"Result searching in vector db, found {len(hits)} points")
 
             ranked = self.scorer(
                 hits=hits,

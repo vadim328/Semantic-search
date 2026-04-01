@@ -62,7 +62,8 @@ def create_search_routes(searcher: SemanticSearchEngine) -> APIRouter:
             f"limit: {limit}, "
             f"alpha: {alpha}, "
             f"search mode: {search_mode}, "
-            f"exact: {exact}",
+            f"exact: {exact}, "
+            f"filters: {filters}"
         )
 
         result = await searcher.search(query, product, search_mode, limit, alpha, exact, filters)
