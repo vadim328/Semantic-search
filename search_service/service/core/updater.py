@@ -1,7 +1,7 @@
 # service/updater.py
 import asyncio
 from typing import List
-from search_service.text_processing.text_preparation import transforms_bert, clean_comments
+from search_service.text_processing.text_preparation import transforms_bert, transforms_nn, transforms_comments
 from qdrant_client.models import PointStruct
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -99,16 +99,19 @@ class DataUpdater:
         """
         vectors = {}
 
-        problem_text = transforms_bert(text=row["problem"])["text"]  # Чистим от лишнего
-        vectors["original"] = await self.container.model_client.embed(problem_text)
+        # Очищенные комментарии сохраняем чтоб не чистить 2 раза
+        comments = transforms_comments(text=row["comments"])["text"]
 
-        '''problem_summary = self.container.model_client.make_summarize(
-            problem=row["problem"],
-            comments=row["comments"]
-        )'''
-        vectors["summary"] = await self.container.model_client.embed(problem_text)
+        vectors["original"] = await self.container.model_client.embed(
+            transforms_bert(text=row["problem"])["text"]
+        )
 
-        comments = clean_comments(row["comments"])
+        problem_summary = await self.container.model_client.make_summarize(
+            problem=transforms_nn(text=row["problem"])["text"],
+            comments=comments
+        )
+        vectors["summary"] = await self.container.model_client.embed(problem_summary)
+
         vectors["comments"] = await self.container.model_client.embed(comments)
 
         return vectors
@@ -126,7 +129,7 @@ class DataUpdater:
         product_points = defaultdict(list)
 
         for row in rows:
-            log.debug(f"Row - {row}")
+            log.debug(f"Summarize and fetch embedding for request - {row['number']}")
             vectors = await self._get_embedding(row)
 
             product_points[row["product"]].append(

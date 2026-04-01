@@ -1,6 +1,6 @@
 # api/routes/search_routes.py
 from fastapi import APIRouter, Request
-from search_service.service.search_engine import SemanticSearchEngine
+from search_service.service.core.search_engine import SemanticSearchEngine
 from fastapi.responses import JSONResponse
 from search_service.api.routes.validate_params import validate_params
 from search_service.config import Config

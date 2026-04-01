@@ -123,3 +123,112 @@ class RemoveFirstWords:
             if match:
                 text = text[match.end():]
         return {"text": text}
+
+
+class LowerText:
+    """Приведение текста к нижнему регистру"""
+    def __call__(self, text):
+        if not isinstance(text, str):
+            text = str(text or "")
+        return {"text": text.lower()}
+
+
+class StripHTML:
+    def __init__(self):
+        self.pattern = re.compile(r'<[^>]+>')
+
+    def __call__(self, text: str):
+        return {"text": self.pattern.sub(' ', text)}
+
+
+class NormalizeWhitespace:
+    def __call__(self, text: str):
+        return {"text": re.sub(r'\s+', ' ', text).strip()}
+
+
+class SplitBlocks:
+    def __init__(self, separator="|||"):
+        self.separator = separator
+
+    def __call__(self, text: str):
+        blocks = [b.strip() for b in text.split(self.separator) if b.strip()]
+        return {"text": blocks}
+
+
+class JoinBlocks:
+    def __init__(self, separator="\n"):
+        self.separator = separator
+
+    def __call__(self, blocks: List[str]):
+        return {"text": self.separator.join(blocks)}
+
+
+class FilterEmpty:
+    def __call__(self, blocks: List[str]):
+        return {"text": [b for b in blocks if b.strip()]}
+
+
+class MapBlocks:
+    def __init__(self, transform):
+        self.transform = transform
+
+    def __call__(self, blocks: List[str]):
+        result = []
+        for b in blocks:
+            cleaned = self.transform(b)["text"]
+            if cleaned:
+                result.append(cleaned)
+        return {"text": result}
+
+
+class RemoveLogs:
+    def __init__(self):
+        self.log_line_patterns = [
+            re.compile(p) for p in [
+                r'\.java:\d+',
+                r'\.py", line \d+',
+                r'Traceback',
+                r'\bat\s+.*\(.+:\d+:\d+\)',
+                r'^\s*at\s+',
+                r'Exception',
+                r'Error',
+            ]
+        ]
+
+        self.inline_patterns = [
+            re.compile(p) for p in [
+                r'\b[\w.$]+\([\w.$]+\.java:\d+\)',
+                r'\S+\.(java|py|js|ts|go|cpp):\d+',
+            ]
+        ]
+
+        self.exception_pattern = re.compile(
+            r'"exception"\s*:\s*"\[.*?\]"', re.S
+        )
+
+    def is_log_line(self, line: str) -> bool:
+        return any(p.search(line) for p in self.log_line_patterns)
+
+    def __call__(self, text: str):
+        # 1. убираем exception блоки
+        text = self.exception_pattern.sub(' ', text)
+
+        # 2. разбиваем на строки
+        lines = re.split(r'[\n\r]+', text)
+
+        # 3. фильтруем строки
+        lines = [l for l in lines if not self.is_log_line(l)]
+
+        text = " ".join(lines)
+
+        # 4. inline очистка
+        for p in self.inline_patterns:
+            text = p.sub(' ', text)
+
+        # 5. убираем JSON шум
+        text = re.sub(r'[{}\[\]"]', ' ', text)
+
+        # 6. нормализация
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        return {"text": text}

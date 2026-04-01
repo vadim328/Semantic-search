@@ -4,12 +4,12 @@ from fastapi.staticfiles import StaticFiles
 import logging
 import asyncio
 
-from service.logging_config import setup_logging
-from service.search_engine import SemanticSearchEngine
-from service.updater import DataUpdater
-from service.di import init_container
-from api.routes import register_routes
-from config import Config
+from search_service.service.config.logging_config import setup_logging
+from search_service.service.core.search_engine import SemanticSearchEngine
+from search_service.service.core.updater import DataUpdater
+from search_service.service.config.di import init_container
+from search_service.api.routes import register_routes
+from search_service.config import Config
 
 setup_logging()
 log = logging.getLogger(__name__)
@@ -56,6 +56,19 @@ async def startup_event():
 
     # Статика фронтенда
     app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """
+    Функция для корректного завершения приложения:
+    - закрывает gRPC клиент
+    - останавливает все сервисы
+    """
+    container = getattr(app, "container", None)
+    if container and hasattr(container, "model_client"):
+        await container.model_client.close()
+        log.info("ModelServiceClient correct closed")
 
 
 @app.get("/Health")

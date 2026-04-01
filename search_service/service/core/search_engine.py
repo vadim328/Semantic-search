@@ -1,6 +1,6 @@
-from search_service.service.scorer import HybridScorer
-from search_service.text_processing.text_preparation import transforms_bert
-from search_service.service.utils import timestamp_to_date
+from search_service.service.core.scorer import HybridScorer
+from search_service.text_processing.text_preparation import transforms_bert, transforms_nn, transforms_comments
+from search_service.service.utils.utils import timestamp_to_date
 import asyncio
 import logging
 from search_service.config import Config
@@ -93,8 +93,8 @@ class SemanticSearchEngine:
             req_data = req_data[0]  # Берем первую и единствуенную строку
 
             query = await self.container.model_client.make_summarize(
-                problem=req_data["problem"],
-                comments=req_data["comments"]
+                problem=transforms_nn(text=req_data["problem"])["text"],
+                comments=transforms_comments(text=req_data["comments"])["text"]
             )
 
             return await self.container.model_client.embed(query)

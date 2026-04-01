@@ -2,7 +2,8 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from search_service.api.routes.validate_params import validate_params
-from search_service.service.model_client import ModelServiceClient
+from search_service.service.clients.model_client import ModelServiceClient
+from search_service.text_processing.text_preparation import transforms_nn, transforms_comments
 import logging
 
 log = logging.getLogger(__name__)
@@ -23,14 +24,19 @@ def create_summarize_router(model_client: ModelServiceClient) -> APIRouter:
 
         validate_params(data, ["text"])
 
-        text = data.get("text")
-        comments = data.get("comments", None)
+        # Применяем очистку текста и комментариев
+        def clean_input(dirty_text: str, dirty_comments: str = None):
+            clean_text = transforms_nn(text=dirty_text)["text"]  # общий pipeline для текста
+            clean_comments_text = transforms_comments(text=dirty_comments)["text"] if dirty_comments else None
+            return clean_text, clean_comments_text
+
+        text, comments = clean_input(data.get("text"), data.get("comments"))
 
         log.info(f"Request on summarization {text}")
 
         summary = await model_client.make_summarize(
             problem=text,
-            comments=comments
+            comments=comments,
         )
 
         log.info(f"Summarized text: {summary}")

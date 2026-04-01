@@ -1,6 +1,4 @@
-import typing
-import text_processing.TransformsText as TT
-from bs4 import BeautifulSoup
+from search_service.text_processing import TransformsText as TT
 import re
 from typing import List
 
@@ -56,22 +54,40 @@ transforms_bert = TT.TextCompose([
     ]),
 ])
 
-transforms_comments = TT.TextCompose([
-    TT.RemoveFirstWords([r'Erudite']),
+transforms_nn = TT.TextCompose([
+    TT.RemoveLogs(),
     TT.ReplaceText([
-                    (r'добрый день', ''),
-                    (r'в работе', ''),
-                    (r'запрос в работе', ''),
-                    (r'отложен до.*', ''),
-                    (r'т\.к\.', ''),
-                    (r'отложенная заявка автоматически.*', ''),
-                    (r'<b>#### статус изменился.*', ''),
-                    (r'####.*', ''),
-                    (r'данный запрос находится в состоянии.*', ''),
-                    (r'необходимо классифицировать запрос', ''),
-                    (r'категория назначена', ''),
-    ])
+        (r'\b[A-Za-z]{8,}\b', ''),
+        (r'\s{2,}', ' '),
+    ]),
 ])
+
+comment_block_cleaner = TT.TextCompose([
+    TT.RemoveFirstWords([r'Erudite']),
+    TT.StripHTML(),
+    TT.LowerText(),
+    TT.ReplaceText([
+        (r'добрый день', ''),
+        (r'в работе', ''),
+        (r'запрос в работе', ''),
+        (r'отложен до.*', ''),
+        (r'т\.к\.', ''),
+        (r'отложенная заявка автоматически.*', ''),
+        (r'<b>#### статус изменился.*', ''),
+        (r'####.*', ''),
+        (r'данный запрос находится в состоянии.*', ''),
+        (r'необходимо классифицировать запрос', ''),
+        (r'категория назначена', ''),
+    ]),
+    TT.NormalizeWhitespace(),
+])
+
+transforms_comments = TT.TextCompose([
+    TT.SplitBlocks(),                         # строка → список блоков
+    TT.MapBlocks(comment_block_cleaner),      # чистим каждый блок
+    TT.JoinBlocks("\n"),                      # обратно в текст
+])
+
 
 def preparation_list(texts: list[str]) -> tuple[list[list[str]], list[str]]:
     """Подготавливает тексты для BM25 и BERT-моделей.

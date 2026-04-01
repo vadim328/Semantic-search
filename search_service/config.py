@@ -1,5 +1,5 @@
 import yaml
-from service.utils import load_file
+from search_service.service.utils.utils import load_file
 
 
 class Config:

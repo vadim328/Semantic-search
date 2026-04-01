@@ -5,7 +5,7 @@ import logging
 
 from search_service.db.relational_db.relational_db import RelationalDatabaseTouch
 from search_service.db.vector_db.client import VectorDB
-from search_service.service.model_client import ModelServiceClient
+from search_service.service.clients.model_client import ModelServiceClient
 from search_service.config import Config
 
 log = logging.getLogger(__name__)

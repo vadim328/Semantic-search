@@ -1,6 +1,6 @@
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from search_service.service.utils import load_file
+from search_service.service.utils.utils import load_file
 import logging
 
 log = logging.getLogger(__name__)
