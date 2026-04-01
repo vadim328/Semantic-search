@@ -14,6 +14,7 @@ class DataUpdater:
     def __init__(self, container):
 
         self.container = container
+        self.max_concurrent = 1
 
         # Берем последнюю запись среди всех коллекций
         self.date_from = datetime.fromtimestamp(
@@ -118,32 +119,42 @@ class DataUpdater:
 
     async def _build_points(self, rows: List[dict]) -> dict:
         """
-            Преобразование полученных строк из реляционной БД
-            в нужный формат для сохранения в векторную БД
-                input:
-                    rows (List) - записи, полученные из реляционной БД
-                output:
-                    dict - словарь, где ключями являются названия продуктов,
-                        а значениями, список объектов PointStruct
+            Асинхронное преобразование записей в PointStruct с параллельным получением эмбеддингов.
+
+            Args:
+                rows: список записей из БД
+
+            Returns:
+                dict: ключ — product, значение — список PointStruct
         """
         product_points = defaultdict(list)
 
-        for row in rows:
-            log.debug(f"Summarize and fetch embedding for request - {row['number']}")
-            vectors = await self._get_embedding(row)
+        # Определяем максимальное количество параллельных обработок строк
+        semaphore = asyncio.Semaphore(self.max_concurrent)
 
-            product_points[row["product"]].append(
-                PointStruct(
-                    id=int(row["number"]),
-                    vector=vectors,
-                    payload={
-                        "text": row["problem"],
-                        "client": row["client"],
-                        "registry_date": row["registry_date"].timestamp(),
-                        "date_end": row["date_end"].timestamp()
-                    }
+        async def process_row(row: dict):
+            async with semaphore:
+                log.debug(f"Summarize and fetch embedding for request - {row['number']}")
+                vectors = await self._get_embedding(row)
+
+                product_points[row["product"]].append(
+                    PointStruct(
+                        id=int(row["number"]),
+                        vector=vectors,
+                        payload={
+                            "text": row["problem"],
+                            "client": row["client"],
+                            "registry_date": row["registry_date"].timestamp(),
+                            "date_end": row["date_end"].timestamp(),
+                        }
+                    )
                 )
-            )
+
+        # создаём задачи для всех строк
+        tasks = [asyncio.create_task(process_row(row)) for row in rows]
+
+        # ждём выполнения всех задач
+        await asyncio.gather(*tasks)
 
         return product_points
 
