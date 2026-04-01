@@ -355,7 +355,13 @@ curl -X POST "http://localhost:5000/summarization/" \
       - full_scan_threshold - количество точек когда не нужен hnsw, по умолчанию 1000
       - max_indexing_threads - количество потоков, 0 - авто
       - on_disk - где хранить граф, False в RAM
-- model - URL для подключения к сервису моделей
+- model
+  - url - URL для подключения к сервису моделей
+  - chunking
+    - max_content_tokens - Максимальная длина промпта
+    - generation_tokens - Количество токенов для генерации результата
+    - token_safety_ratio - Доля, которую необходимо брать от максимального количества токенов
+    - chars_per_token - Количество символов в токене
 - service - блок с настройками сервиса
   - logging_level - настройка уровня логирования приложения
   - products - Список продуктов с которыми будет работать сервис

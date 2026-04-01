@@ -2,18 +2,19 @@ from search_service.service.core.scorer import HybridScorer
 from search_service.text_processing.text_preparation import transforms_bert, transforms_nn, transforms_comments
 from search_service.service.utils.utils import timestamp_to_date
 import asyncio
-import logging
 from search_service.config import Config
+import logging
+
 
 log = logging.getLogger(__name__)
-cfg = Config().data
+cfg = Config().data["service"]["searcher"]
 
 
 class SemanticSearchEngine:
     def __init__(self, container):
         self.container = container
         self.scorer = HybridScorer()
-        self.threshold = cfg["service"]["searcher"]["threshold"]
+        self.threshold = cfg["threshold"]
 
         # TODO Можно перенести в конфиг
         self.SEARCH_MODES = {

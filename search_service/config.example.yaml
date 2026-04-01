@@ -20,6 +20,11 @@ database:
 
 model:
   url: ""                       # URL сервиса с моделями
+  chunking:
+    max_content_tokens: int
+    generation_tokens: int
+    token_safety_ratio: float
+    chars_per_token: int
 
 service:
   logging_level: "INFO"
