@@ -46,10 +46,7 @@ def create_search_routes(searcher: SemanticSearchEngine) -> APIRouter:
 
         data = await request.json()
 
-        try:
-            validate_params(data, ["query", "product"])
-        except Exception as e:
-            return e
+        validate_params(data, ["query", "product"])
 
         query = data.get("query")
         product = data.get("product")

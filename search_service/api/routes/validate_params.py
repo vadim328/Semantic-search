@@ -7,5 +7,5 @@ def validate_params(params: dict, req_params: List):
         if not params.get(req_param):
             raise HTTPException(
                 status_code=400,
-                detail="Missing required parameters"
+                detail=f"Missing required parameters - {req_param}"
             )

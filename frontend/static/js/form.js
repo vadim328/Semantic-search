@@ -2,8 +2,10 @@ export function buildPayloadSearch() {
 
   const payload = {
     query: document.getElementById("query").value,
-    product: document.getElementById("product").value
   };
+
+  const productSelect = document.getElementById("product-select");
+  payload.product = productSelect?.querySelector(".selected")?.textContent || "";
 
   const limit = document.getElementById("limit").value;
   if (limit) payload.limit = Number(limit);
@@ -19,15 +21,16 @@ export function buildPayloadSearch() {
 
   const filter = {};
 
+  const clientSelect = document.getElementById("client-select");
+  const client = clientSelect?.querySelector(".selected")?.textContent;
+  if (client) filter.client = client;
+
   ["date_from", "date_to"].forEach(id => {
 
     const val = document.getElementById(id).value;
     if (val) filter[id] = val;
 
   });
-
-  const client = document.getElementById("client").value;
-  if (client) filter.client = client;
 
   if (Object.keys(filter).length) {
     payload.filter = filter;

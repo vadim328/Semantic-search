@@ -107,11 +107,11 @@ class DataUpdater:
             transforms_bert(text=row["problem"])["text"]
         )
 
-        problem_summary = await self.container.model_client.make_summarize(
+        '''problem_summary = await self.container.model_client.make_summarize(
             problem=transforms_nn(text=row["problem"])["text"],
             comments=comments
-        )
-        vectors["summary"] = await self.container.model_client.embed(problem_summary)
+        )'''
+        vectors["summary"] = await self.container.model_client.embed(transforms_bert(text=row["problem"])["text"])
 
         vectors["comments"] = await self.container.model_client.embed(comments)
 
