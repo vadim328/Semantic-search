@@ -39,8 +39,6 @@ def create_summarize_router(model_client: ModelServiceClient) -> APIRouter:
             comments=comments,
         )
 
-        log.info(f"Summarized text: {summary}")
-
         return JSONResponse({"summary": summary})
 
     return router

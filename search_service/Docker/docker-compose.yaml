@@ -1,4 +1,4 @@
-version: "3"
+version: "3.9"
 services:
   # vector database
   qdrant:
@@ -11,12 +11,12 @@ services:
     restart: unless-stopped
 
   # application
-  search-service:
-    image: naumen-support/sherlock:1.0.0
+  sherlock:
+    image: naumen-support/
     container_name: Sherlock
     volumes:
       - /opt/supportai/sherlock/config/config.yaml:/app/search_service/config.yaml
     ports:
       - "5000:5000"
-    command: uvicorn app:app --workers 1 --host 0.0.0.0 --port 5000
+    command: uvicorn search_service.app:app --host 0.0.0.0 --port 5000
     restart: unless-stopped

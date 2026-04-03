@@ -136,7 +136,7 @@ class DataUpdater:
 
         async def process_row(row: dict):
             async with semaphore:
-                log.debug(f"Summarize and fetch embedding for request - {row['number']}")
+                log.info(f"Summarize and fetch embedding for request - {row['number']}")
                 vectors = await self._get_embedding(row)
 
                 product_points[row["product"]].append(

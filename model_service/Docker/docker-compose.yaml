@@ -2,7 +2,6 @@ version: "3.9"
 
 services:
   athena:
-    build: .
     image: naumen-support/athena:1.0.0
     container_name: Athena
     ports:

@@ -10,12 +10,6 @@ scikit-learn
 
 rank_bm25
 
-sentence-transformers==5.1.2
-transformers==4.55.4
-
-optimum==2.0.0
-optimum[onnxruntime]
-
 sqlalchemy==2.0.44
 asyncpg
 
@@ -24,7 +18,5 @@ qdrant-client
 uvicorn>=0.38.0
 
 pyyaml>=6.0.3
-
-accelerate==1.13.0
 
 bs4==0.0.2
