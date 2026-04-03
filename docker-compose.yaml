@@ -1,0 +1,47 @@
+version: "3.9"
+services:
+
+  # model application
+  athena:
+    image: naumen-support/athena:1.0.0
+    container_name: Athena
+    ports:
+      - "50051:50051"
+    volumes:
+      - /opt/supportai/athena/models:/app/model_service/models
+      - /opt/supportai/athena/config.yaml:/app/model_service/config.yaml
+    restart: always
+    networks:
+      - support_search
+
+  # vector database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant_db
+    volumes:
+      - /opt/supportai/qdrant_storage:/qdrant/storage
+    ports:
+      - "6333:6333"
+    restart: unless-stopped
+    networks:
+      - support_search
+
+  # search application
+  sherlock:
+    image: naumen-support/sherlock:1.0.0
+    container_name: Sherlock
+    volumes:
+      - /opt/supportai/sherlock/config/config.yaml:/app/search_service/config.yaml
+    ports:
+      - "5000:5000"
+    command: uvicorn search_service.app:app --host 0.0.0.0 --port 5000
+    depends_on:
+      - qdrant
+      - athena
+    restart: unless-stopped
+    networks:
+      - support_search
+
+networks:
+  support_search:
+    driver: bridge
