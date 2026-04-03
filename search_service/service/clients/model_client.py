@@ -68,7 +68,8 @@ class ModelServiceClient:
             model_pb2.GenerateRequest(
                 prompt=prompt,
                 max_tokens=settings.generation_tokens
-            )
+            ),
+            timeout=60.0
         )
         return response.text
 
@@ -77,7 +78,8 @@ class ModelServiceClient:
             texts = [texts]
 
         response = await self.stub.Embed(
-            model_pb2.EmbeddingRequest(texts=texts)
+            model_pb2.EmbeddingRequest(texts=texts),
+            timeout=10.0
         )
 
         if not response.embeddings:
