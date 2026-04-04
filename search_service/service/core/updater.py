@@ -87,8 +87,6 @@ class DataUpdater:
 
             await vector_db_collection.save_embeddings(points)
 
-            log.info(f"Saved {len(points)} points to product '{product}'")
-
     async def _get_embedding(self, row: dict):
         """
             Метод для получения эмбеддинга запроса по трем составляющим:
@@ -160,10 +158,16 @@ class DataUpdater:
 
         return product_points
 
+    @classmethod
+    def chunked(cls, iterable, size):
+        for i in range(0, len(iterable), size):
+            yield iterable[i:i + size]
+
     async def _process_interval(self, interval: dict):
 
         """
-            Метод для работы с интервалами
+            Метод для работы с интервалами, обрабатывает строки батчами,
+                с сохранением в БД
                 input:
                     dict - содержит дату начала и конца выборки
         """
@@ -175,9 +179,30 @@ class DataUpdater:
 
         rows = self.container.relational_db.get_data()
 
-        product_points = await self._build_points(rows)
+        batch_size = 5
+        max_retries = 3
 
-        await self._save_points(product_points)
+        log.info(f"Batches for processing - {int(len(rows)/batch_size + 1)}")
+
+        for i, batch in enumerate(self.chunked(rows, batch_size), start=1):
+            log.info(f"Processing batch {i} ({len(batch)} rows)")
+
+            # три раза пытаемся обработать батч, иначе пропускаем его
+            for attempt in range(1, max_retries + 1):
+                try:
+                    product_points = await self._build_points(batch)
+                    await self._save_points(product_points)
+
+                    log.info(f"Batch {i} completed on attempt {attempt}")
+                    break
+
+                except Exception:
+                    log.exception(f"Batch {i} failed on attempt {attempt}")
+
+                    if attempt == max_retries:
+                        log.error(f"Batch {i} could not processed, skipping")
+                    else:
+                        await asyncio.sleep(10 ** attempt)
 
         log.info("Interval work completed")
 

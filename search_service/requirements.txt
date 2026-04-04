@@ -20,3 +20,5 @@ uvicorn>=0.38.0
 pyyaml>=6.0.3
 
 bs4==0.0.2
+
+tenacity>=9.1.4

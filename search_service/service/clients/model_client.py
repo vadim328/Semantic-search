@@ -1,8 +1,9 @@
+from typing import List, Union
 import grpc.aio
 import numpy as np
 import json
 import logging
-from typing import List, Union
+from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception, before_sleep_log
 from search_service.service.clients.chunk_settings import ChunkSettings as settings
 
 from contracts.generated import model_pb2
@@ -49,6 +50,21 @@ def build_prompt(problem: str, comments: str = settings.default_empty_comments) 
     )
 
 
+def is_retryable_grpc_error(exception):
+    if isinstance(exception, grpc.aio.AioRpcError):
+        return exception.code() in {
+            grpc.StatusCode.UNAVAILABLE,
+            grpc.StatusCode.DEADLINE_EXCEEDED,
+            grpc.StatusCode.RESOURCE_EXHAUSTED,
+        }
+
+    # 👇 добавляем обычные сетевые ошибки
+    if isinstance(exception, (ConnectionRefusedError, OSError)):
+        return True
+
+    return False
+
+
 class ModelServiceClient:
 
     def __init__(self, url: str):
@@ -61,6 +77,13 @@ class ModelServiceClient:
     async def __aexit__(self, exc_type, exc, tb):
         await self._channel.close()
 
+    @retry(
+        stop=stop_after_attempt(5),  # можно чуть больше для старта сервиса
+        wait=wait_random_exponential(multiplier=1, max=10),
+        retry=retry_if_exception(is_retryable_grpc_error),
+        before_sleep=before_sleep_log(log, logging.WARNING),
+        reraise=True,
+    )
     async def generate(self, prompt: str) -> str:
         log.debug("Prompt for LLM: %s", prompt)
 

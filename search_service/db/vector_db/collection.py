@@ -157,7 +157,7 @@ class CollectionStore:
         self._metadata.points_count += len(points)
 
     async def save_embeddings(self, points: List[PointStruct]):
-        log.info(f"Saving {len(points)} embeddings")
+        log.info(f"Saving {len(points)} points to collection - '{self._collection}'")
 
         try:
             await self._client.upsert(
@@ -167,8 +167,10 @@ class CollectionStore:
 
             self._update_metadata_fast(points)
 
+            log.info(f"Points successfully saved to collection - '{self._collection}'")
+
         except Exception as e:
-            log.error(f"Embedding unsuccessfully saved. Error - {e}")
+            log.error(f"Points unsuccessfully saved to collection - '{self._collection}'. Error - {e}")
 
     async def fetch_embeddings(
         self,

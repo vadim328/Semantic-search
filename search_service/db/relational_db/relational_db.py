@@ -1,5 +1,6 @@
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from search_service.service.utils.utils import load_file
 import logging
 
@@ -13,6 +14,12 @@ class RelationalDatabaseTouch:
         self.request_data_query = text(load_file("search_service/db/relational_db/queries/fetch_data_request.sql"))
         self.requests = {}
 
+    @retry(
+        stop=stop_after_attempt(3),  # максимум 3 попытки
+        wait=wait_exponential(multiplier=1, min=1, max=10),  # exponential backoff
+        retry=retry_if_exception_type(Exception),
+        reraise=True,  # пробрасывает финальную ошибку
+    )
     async def make_request(self, query, params=None):
         """
             Получение данных из БД, сохраняет в переменную
@@ -29,6 +36,7 @@ class RelationalDatabaseTouch:
                 return response
             except Exception as e:
                 log.error(f"Error retrieving data from relational db: {e}")
+                raise
 
     async def fetch_data(self, params: dict):
         """
@@ -36,7 +44,7 @@ class RelationalDatabaseTouch:
             :input:
                 dict: Параметры запроса
         """
-        query = text(load_file("search_service/db/relational_db/queries/fetch_requests.sql"))
+        query = text(load_file("search_service/db/relational_db/queries/test.sql"))
         self.requests = await self.make_request(query, params)
         log.info(f"Data received from relational db, count rows - {len(self.requests)}")
 
