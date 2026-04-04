@@ -44,7 +44,7 @@ class RelationalDatabaseTouch:
             :input:
                 dict: Параметры запроса
         """
-        query = text(load_file("search_service/db/relational_db/queries/test.sql"))
+        query = text(load_file("search_service/db/relational_db/queries/fetch_requests.sql"))
         self.requests = await self.make_request(query, params)
         log.info(f"Data received from relational db, count rows - {len(self.requests)}")
 

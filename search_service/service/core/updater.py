@@ -130,32 +130,22 @@ class DataUpdater:
         """
         product_points = defaultdict(list)
 
-        # Определяем максимальное количество параллельных обработок строк
-        semaphore = asyncio.Semaphore(self.max_concurrent)
+        for row in rows:
+            log.info(f"Summarize and fetch embedding for request - {row['number']}")
+            vectors = await self._get_embedding(row)
 
-        async def process_row(row: dict):
-            async with semaphore:
-                log.info(f"Summarize and fetch embedding for request - {row['number']}")
-                vectors = await self._get_embedding(row)
-
-                product_points[row["product"]].append(
-                    PointStruct(
-                        id=int(row["number"]),
-                        vector=vectors,
-                        payload={
-                            "text": row["problem"],
-                            "client": row["client"],
-                            "registry_date": row["registry_date"].timestamp(),
-                            "date_end": row["date_end"].timestamp(),
-                        }
-                    )
+            product_points[row["product"]].append(
+                PointStruct(
+                    id=int(row["number"]),
+                    vector=vectors,
+                    payload={
+                        "text": row["problem"],
+                        "client": row["client"],
+                        "registry_date": row["registry_date"].timestamp(),
+                        "date_end": row["date_end"].timestamp(),
+                    }
                 )
-
-        # создаём задачи для всех строк
-        tasks = [asyncio.create_task(process_row(row)) for row in rows]
-
-        # ждём выполнения всех задач
-        await asyncio.gather(*tasks)
+            )
 
         return product_points
 
@@ -186,10 +176,10 @@ class DataUpdater:
         log.info(f"Batches for processing - {int(len(rows)/batch_size + 1)}")
 
         for i, batch in enumerate(self.chunked(rows, batch_size), start=1):
-            log.info(f"Processing batch {i} ({len(batch)} rows)")
 
             # три раза пытаемся обработать батч, иначе пропускаем его
             for attempt in range(1, max_retries + 1):
+                log.info(f"Processing batch {i} ({len(batch)} rows)")
                 try:
                     product_points = await self._build_points(batch)
                     await self._save_points(product_points)
