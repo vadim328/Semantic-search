@@ -12,7 +12,7 @@ def register_routes(
 
     routers = [
         create_search_routes(searcher),
-        create_summarize_router(container.model_client),
+        create_summarize_router(container.summarization_orchestrator),
         # сюда можно просто добавлять новые роутеры
     ]
 

@@ -107,9 +107,10 @@ class DataUpdater:
             transforms_bert(text=row["problem"])["text"]
         )
 
-        problem_summary = await self.container.model_client.make_summarize(
+        problem_summary = await self.container.summarization_orchestrator.summarize(
             problem=transforms_nn(text=row["problem"])["text"],
-            comments=comments
+            comments=comments,
+            max_concurrent=self.max_concurrent,
         )
         vectors["summary"] = await self.container.model_client.embed(problem_summary)
 

@@ -2,14 +2,14 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from search_service.api.routes.validate_params import validate_params
-from search_service.service.clients.model_client import ModelServiceClient
+from search_service.service.clients.summarization_orchestrator import SummarizationOrchestrator
 from search_service.text_processing.text_preparation import transforms_nn, transforms_comments
 import logging
 
 log = logging.getLogger(__name__)
 
 
-def create_summarize_router(model_client: ModelServiceClient) -> APIRouter:
+def create_summarize_router(summarization_orchestrator: SummarizationOrchestrator) -> APIRouter:
     router = APIRouter(prefix="/summarization", tags=["Summarize"])
 
     @router.post("/")
@@ -34,9 +34,10 @@ def create_summarize_router(model_client: ModelServiceClient) -> APIRouter:
 
         log.info(f"Request on summarization {text}")
 
-        summary = await model_client.make_summarize(
+        summary = await summarization_orchestrator.summarize(
             problem=text,
             comments=comments,
+            max_concurrent=1,
         )
 
         return JSONResponse({"summary": summary})

@@ -6,6 +6,7 @@ import logging
 from search_service.db.relational_db.relational_db import RelationalDatabaseTouch
 from search_service.db.vector_db.client import VectorDB
 from search_service.service.clients.model_client import ModelServiceClient
+from search_service.service.clients.summarization_orchestrator import SummarizationOrchestrator
 from search_service.config import Config
 
 log = logging.getLogger(__name__)
@@ -19,9 +20,13 @@ class Container:
     """
 
     def __init__(self):
-        # ❗ только синхронная инициализация (без I/O)
+        # Cинхронная инициализация (без I/O)
         log.info("Init model service client")
         self.model_client = ModelServiceClient(cfg.model["url"])
+
+        self.summarization_orchestrator = SummarizationOrchestrator(
+            self.model_client
+        )
 
         log.info("Init relational db client")
         self.relational_db = RelationalDatabaseTouch(

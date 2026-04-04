@@ -46,11 +46,11 @@ async def startup_event():
     # Запускаем обновления в фоне
     asyncio.create_task(updater.run())
 
-    search_routers = register_routes(
+    routers = register_routes(
         searcher=searcher,
         container=container
     )
-    for router in search_routers:
+    for router in routers:
         log.info(f"Include api router - {router}")
         app.include_router(router)
 
