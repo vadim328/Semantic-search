@@ -1,5 +1,7 @@
+from typing import List, Dict, Any, Union
 from search_service.service.core.scorer import HybridScorer
 from search_service.text_processing.text_preparation import transforms_bert, transforms_nn, transforms_comments
+from qdrant_client.models import PointStruct
 from search_service.service.utils.utils import timestamp_to_date
 import asyncio
 from search_service.config import Config
@@ -11,6 +13,7 @@ cfg = Config().data["service"]["searcher"]
 
 
 class SemanticSearchEngine:
+    """Поисковой движок"""
     def __init__(self, container):
         self.container = container
         self.scorer = HybridScorer()
@@ -23,13 +26,13 @@ class SemanticSearchEngine:
             "comments": ["comments"],
         }
 
-    async def generate_result(self, calc_result: list[dict]):
+    async def generate_result(self, calc_result: list[dict]) -> List[Dict]:
         """
-            Формирует итоговый результат поиска
-            :input:
-                list[dict]: Результаты поиска
-            :output:
-                list[dict]: Результат поиска с дополнительной информацией
+        Формирует итоговый результат поиска
+        Args:
+            list[dict]: Результаты поиска
+        Returns:
+            list[dict]: Результат поиска с дополнительной информацией
         """
 
         additional_data = await self.container.relational_db.fetch_additional_data(
@@ -54,15 +57,13 @@ class SemanticSearchEngine:
         return result
 
     @staticmethod
-    def merge_hits(results):
+    def merge_hits(results: List[PointStruct]) -> Dict:
         """
-            Объединение полученных результатов и
-                их группировка по максимальному score
-
-            input:
-                list[list] - Результаты по векторам
-            output:
-                list - Объединенные результаты
+        Объединение полученных результатов и их группировка по максимальному score
+        Args:
+            results (List[PointStruct]): Результаты по векторам
+        Returns:
+            Dict: Объединенные результаты
         """
         hits = {}
 
@@ -83,13 +84,13 @@ class SemanticSearchEngine:
     async def _get_embedding(
             self,
             query: str,
-    ):
+    ) -> Any:
         """
-            Метод для получения эмбеддинга запроса
-                input:
-                    query - Искомый текст или номер запроса
-                output:
-                    vector - эмбеддинг запроса
+        Метод для получения эмбеддинга запроса
+        Args:
+            query (str): Искомый текст или номер запроса
+        Returns:
+            np.ndarray: эмбеддинг запроса
         """
         # Если введен номер запроса, а не текст для поиска
         if query.isdigit():
@@ -117,21 +118,22 @@ class SemanticSearchEngine:
             alpha=0.5,
             exact=True,
             filters=None
-    ):
+    ) -> Union[Dict, List[Dict]]:
         """
-            Поиск информации в векторной БД по введенному тексту
+        Поиск информации в векторной БД по введенному тексту
 
-            :input:
-                query: Искомый текст
-                product: Название продукта для поиска в нужной коллекции
-                limit: Количество лучших совпадений
-                alpha: Баланс между значением косинусного расстояния и
-                        алгоритма BM25
-                exact: Включение/отключение поиска по всем точкам коллекции
-                filters: Фильтры для сужения поиска
+        Args:
+            query (str): Искомый текст
+            product (str): Название продукта для поиска в нужной коллекции
+            search_mode (str): Режим поиска
+            limit (int): Количество лучших совпадений
+            alpha (float): Баланс между значением косинусного расстояния и
+                    алгоритма BM25
+            exact (bool): Включение/отключение поиска по всем точкам коллекции
+            filters (dict, None): Фильтры для сужения поиска
 
-            :output:
-                dict: Отсортированный словарь с ИД запроса и точности сходства
+        :Returns:
+            Union[Dict, List[Dict]]:: Отсортированный словарь с ИД запроса и точности сходства
         """
         if filters is None:
             filters = {}
@@ -177,13 +179,13 @@ class SemanticSearchEngine:
         except Exception as e:
             log.error(f"Error: {e}")
 
-    def get_metadata(self, product):
+    def get_metadata(self, product: str) -> Dict:
         """
-            Формирует и передает метаданные
-                :input:
-                    str: Название продукта
-                :output:
-                    dict: метаданные
+        Формирует и передает метаданные
+        Args:
+            product (str): Название продукта
+        Returns:
+            Dict: метаданные
         """
         log.debug(f"Metadata for the '{product}' product was requested")
         res = self.container.vector_db.collection(product).metadata()

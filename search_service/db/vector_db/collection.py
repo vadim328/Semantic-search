@@ -1,11 +1,11 @@
 from typing import List, Optional
 from qdrant_client.models import (
     PointStruct,
-    NamedVector,
     SearchParams,
     VectorParams,
     HnswConfigDiff,
-    Distance
+    Distance,
+    QueryResponse
 )
 from qdrant_client import AsyncQdrantClient
 from search_service.db.vector_db.filters import _build_filter
@@ -25,7 +25,7 @@ class CollectionStore:
         collection: str,
         date_from: str
     ):
-        # ❗ только присвоения — никакого I/O
+        # только присвоения — никакого I/O
         self._client = client
         self._collection = collection
 
@@ -44,6 +44,17 @@ class CollectionStore:
         qdrant_config: dict,
         date_from: str
     ) -> "CollectionStore":
+        """
+        Асинхронная фабрика для инициализации CollectionStore
+        Args:
+            client (AsyncQdrantClient): Асинхронный клиент Qdrant
+            collection (str): Название коллекции
+            vectors_param: List[dict]: Параметры векторов (названия и размер)
+            qdrant_config (dict): Параметры индексирования коллекции
+            date_from (str): Дата крайней записи в коллекции
+        Returns:
+            CollectionStore: Коллекция
+        """
 
         self = cls(client, collection, date_from)
 
@@ -60,7 +71,10 @@ class CollectionStore:
             qdrant_config: dict
     ):
         """
-        Инициализация коллекции (без гонок)
+        Создание коллекции (без гонок)
+        Args:
+            vectors_param: List[dict]: Параметры векторов (названия и размер)
+            qdrant_config (dict): Параметры индексирования коллекции
         """
 
         exists = await self._client.collection_exists(self._collection)
@@ -101,7 +115,7 @@ class CollectionStore:
 
     async def _refresh_metadata(self):
         """
-        Полное обновление metadata (дорогое)
+        Полное обновление metadata при первом запуске приложения (дорогое)
         """
 
         offset: Optional[int] = None
@@ -141,6 +155,8 @@ class CollectionStore:
     def _update_metadata_fast(self, points: List[PointStruct]):
         """
         Быстрое обновление metadata (без похода в БД)
+        Args:
+            points: (List[PointStruct]): Точки для обновления метаданных
         """
 
         for p in points:
@@ -157,6 +173,11 @@ class CollectionStore:
         self._metadata.points_count += len(points)
 
     async def save_embeddings(self, points: List[PointStruct]):
+        """
+        Сохранение точек в коллекцию
+        Args:
+            points: (List[PointStruct]): Точки которые необходимо сохранить
+        """
         log.info(f"Saving {len(points)} points to collection - '{self._collection}'")
 
         try:
@@ -177,8 +198,18 @@ class CollectionStore:
         vector_name: str,
         vector: list[float],
         exact: bool,
-        filters: dict,
-    ):
+        filters: dict
+    ) -> QueryResponse:
+        """
+        Получение релевантных точек из коллекции
+        Args:
+            vector_name (str): Название вектора для поиска
+            vector (list[float]): Вектор для поиска
+            exact (bool): Параметр, определяющий необходимость полного перебора точек
+            filters (dict): Фильтры для сужения поиска
+        Returns:
+            hits (QueryResponse): Список найденных точек
+        """
         query_filter = _build_filter(filters)
 
         hits = await self._client.query_points(
@@ -196,4 +227,9 @@ class CollectionStore:
         return hits
 
     def metadata(self) -> dict:
+        """
+        Получение метаданных колелкции
+        Returns:
+            dict: Метаданные коллекции
+        """
         return asdict(self._metadata)

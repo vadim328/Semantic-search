@@ -1,5 +1,5 @@
 # service/scorer.py
-
+from typing import List, Dict
 import numpy as np
 from rank_bm25 import BM25Okapi
 from search_service.text_processing.text_preparation import transforms_bm25
@@ -9,17 +9,21 @@ log = logging.getLogger(__name__)
 
 
 class HybridScorer:
+    """Класс для вычисления гибридного результата поиска"""
     def __call__(
         self,
-        hits,
+        hits: dict,
         query_text: str,
         *,
         alpha: float = 0.5
-    ):
+    ) -> List[Dict]:
         """
-            :param hits: list[ScoredPoint] из Qdrant
-            :param query_text: текст запроса
-            :param alpha: коэффициент для гибридного поиска BM25 (0..1)
+        Args
+            hits (dict): Результаты поиска в векторной БД
+            query_text (str): текст запроса
+            alpha (float): коэффициент для гибридного поиска BM25 (0..1)
+        Returns:
+            List[Dict]: Отсортированыый список результатов поиска
         """
         if not 0 <= alpha <= 1:
             raise ValueError("alpha must be between 0 and 1")

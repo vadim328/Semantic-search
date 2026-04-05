@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 from qdrant_client import AsyncQdrantClient
 from search_service.db.vector_db.collection import CollectionStore
 
@@ -10,12 +10,21 @@ class VectorDB:
         self._collections = {}
 
     async def make_collection(
+
         self,
         date_from: str,
         collection_name: str,
-        vectors_param: List[dict],
+        vectors_param: List[Dict],
         qdrant_config: dict
     ):
+        """
+        Инициирует создание коллекции и сохраняет ее в словарь
+        Args:
+            date_from (str): Дата крайней записи в коллекции
+            collection_name (str): Название коллекции
+            vectors_param: List[dict]: Параметры векторов (названия и размер)
+            qdrant_config (dict): Параметры индексирования коллекции
+        """
 
         store = await CollectionStore.create(
             client=self.client,
@@ -27,8 +36,20 @@ class VectorDB:
 
         self._collections[collection_name] = store
 
-    def collection(self, name: str):
+    def collection(self, name: str) -> CollectionStore:
+        """
+        Получение коллекции по ее наименованию
+        Args:
+            name (str): Название коллекции
+        Returns:
+            CollectionStore: Коллекция
+        """
         return self._collections[name]
 
     def collections(self) -> dict[CollectionStore]:
+        """
+        Получение всех коллекций
+        Returns:
+            dict[CollectionStore]: Словарь коллекций
+        """
         return self._collections

@@ -97,9 +97,9 @@ def preparation_list(texts: list[str]) -> tuple[list[list[str]], list[str]]:
         texts: Список исходных текстов.
 
     Returns:
-        Кортеж из двух списков строк:
-        - первый — тексты, подготовленные для BM25;
-        - второй — тексты, подготовленные для BERT.
+        tuple[list[list[str]], list[str]]: Кортеж из двух списков строк:
+            - первый — токены, подготовленные для BM25;
+            - второй — тексты, подготовленные для BERT.
     """
     tokens_bm25 = [transforms_bm25(text=text)["text"].split() for text in texts]
     texts_bert = [transforms_bert(text=text)["text"] for text in texts]
@@ -113,9 +113,9 @@ def preparation_str(text: str) -> tuple[list[str], str]:
         text: Список исходных текстов.
 
     Returns:
-        Кортеж из двух списков строк:
-        - первый — тексты, подготовленные для BM25;
-        - второй — тексты, подготовленные для BERT.
+        tuple[list[list[str]], str]: Кортеж из списка и строки:
+            - первый — токены, подготовленные для BM25;
+            - второй — текст, подготовленный для BERT.
     """
     tokens_bm25 = transforms_bm25(text=text)["text"].split()
     text_bert = transforms_bert(text=text)["text"]

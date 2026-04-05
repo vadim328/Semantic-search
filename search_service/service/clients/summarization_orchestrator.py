@@ -4,17 +4,26 @@ import asyncio
 from typing import List
 
 from search_service.service.clients.summarization_builder import build_summarization_prompts
-from search_service.service.clients.chunk_settings import ChunkSettings as settings
+from search_service.service.clients.chunk_settings import LLMSettings as settings
 
 log = logging.getLogger(__name__)
 
 
 class SummarizationOrchestrator:
-
+    """
+    Оркестратор для суммаризации запроса
+    """
     def __init__(self, client):
         self.client = client
 
-    async def _generate(self, prompt):
+    async def _generate(self, prompt: str) -> str:
+        """
+        Внутренний метод для генерации
+        Args:
+            prompt (str): Промпт для LLM
+        Returns:
+            result (str): Результат генерации (суммаризации)
+        """
         result = await self.client.generate(prompt)
         log.info(f"Result summarization:\n{result}")
         return result
@@ -22,10 +31,18 @@ class SummarizationOrchestrator:
     async def _map_phase(self,
                          prompts: List[str],
                          max_concurrent: int) -> List[str]:
+        """
+        Поочередная суммаризация чанков одного запроса
+        Args:
+            prompts (List[str]): Промпты для LLM
+            max_concurrent (int): Количество одновременно (почти) выполняющихся запросов
+        Returns:
+            summaries (List[str]): Список суммаризированных чанков
+        """
 
         semaphore = asyncio.Semaphore(max_concurrent)  # Ограничиваем одновременное количество запросов
 
-        async def limited_generate(prompt: str, idx: int):
+        async def limited_generate(prompt: str, idx: int) -> str:
             async with semaphore:
                 log.info(f"Start summarization for chunk {idx + 1}/{len(prompts)}")
                 result = await self._generate(prompt)
@@ -46,6 +63,13 @@ class SummarizationOrchestrator:
         return summaries
 
     async def _reduce_phase(self, summaries: List[str]) -> str:
+        """
+        Суммаризация суммаризированных чанков
+        Args:
+            summaries (List[str]): Суммаризированные чанки
+        Returns:
+            str: Результат суммаризации
+        """
         summaries_text = "\n\n".join(
             json.dumps(s, ensure_ascii=False)
             for s in summaries
@@ -63,6 +87,16 @@ class SummarizationOrchestrator:
                         problem: str,
                         comments: str,
                         max_concurrent: int) -> str:
+        """
+        Суммаризация запроса по проблеме и комментариям
+        Args:
+            problem (str): Описание проблемы
+            comments (str): Комментарии
+            max_concurrent (int): Количество одновременно (почти) выполняющихся запросов
+        Returns:
+            str: Результат суммаризации
+        """
+
         prompts = build_summarization_prompts(
             problem=problem,
             comments=comments,

@@ -16,9 +16,11 @@ def create_summarize_router(summarization_orchestrator: SummarizationOrchestrato
     async def summarize(request: Request):
         """
         POST - метод для суммаризации текста
-        :input:
-            text: строка, которую нужно суммаризировать
-            comments: Комментарии запроса
+        Args:
+            request (Request): Объект запроса FastAPI, содержащий данные суммаризации.
+                Ожидается, что тело запроса содержит JSON с полями:
+                    text: строка, которую нужно суммаризировать
+                    comments: Комментарии запроса
         """
         data = await request.json()
 

@@ -1,18 +1,21 @@
 from datetime import datetime
 from qdrant_client.http import models
+from qdrant_client.http.models import Filter
 import logging
 
 log = logging.getLogger(__name__)
 
 
-def _build_filter(filters: dict):
+def _build_filter(filters: dict) -> Filter:
     """
-        Создаёт объект Filter для Qdrant из словаря фильтров.
+    Создаёт объект Filter для Qdrant из словаря фильтров.
         Автоматически поддерживает:
             - точное совпадение по любому ключу
             - диапазоны дат: date_from, date_to
-        :input:
-            dict: массив фильтров
+    Args:
+        filters (dict): Фильтры
+    Returns:
+        Filter: Объект для фильтрации
     """
     log.info("Building filters...")
     conditions = []
@@ -50,4 +53,5 @@ def _build_filter(filters: dict):
             )
 
     log.info(f"Filters added: {len(conditions)} conditions")
-    return models.Filter(must=conditions) if conditions else None
+
+    return Filter(must=conditions) if conditions else None

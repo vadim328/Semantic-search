@@ -1,6 +1,6 @@
 # service/updater.py
 import asyncio
-from typing import List
+from typing import List, Dict
 from search_service.text_processing.text_preparation import transforms_bert, transforms_nn, transforms_comments
 from qdrant_client.models import PointStruct
 from datetime import datetime, timedelta
@@ -13,6 +13,7 @@ cfg = Config().data["service"]["updater"]
 
 
 class DataUpdater:
+    """Периодическое добавление новых данных"""
     def __init__(self, container):
 
         self.container = container
@@ -40,14 +41,14 @@ class DataUpdater:
         await self.background_updater()
 
     @staticmethod
-    def _build_intervals(start_interval: datetime):
+    def _build_intervals(start_interval: datetime) -> List:
         """
-            Вычисление временных интервалов для их использования в запросах на получение данных
-                Конец последнего интервала - текущая дата и время
-            :input:
-                datetime: Начальная дата
-            :return:
-                list: Список кортежей с начальной и конечной датами
+        Вычисление временных интервалов для их использования в запросах на получение данных
+            Конец последнего интервала - текущая дата и время
+        Args:
+            start_interval (datetime): Начальная дата
+        Returns:
+            list: Список кортежей с начальной и конечной датами
 
         """
         log.info("Calculation data intervals")
@@ -78,25 +79,25 @@ class DataUpdater:
 
     async def _save_points(self, product_points: dict):
         """
-            Поочередно для кадого продукта сохраняем эмбеддинги
-            в их коллекции
-                input: product_points - словарь с данными в формате PointStruct по продуктам,
+        Сохранение точек в коллекции
+            Args:
+                product_points (dict): Cловарь с данными в формате PointStruct по продуктам,
         """
         for product, points in product_points.items():
             vector_db_collection = self.container.vector_db.collection(product)
 
             await vector_db_collection.save_embeddings(points)
 
-    async def _get_embedding(self, row: dict):
+    async def _get_embedding(self, row: dict) -> Dict:
         """
-            Метод для получения эмбеддинга запроса по трем составляющим:
-                1) Оригинальный текст
-                2) Суммаризированный текст по описанию и комментариям
-                3) Комментарии
-                input:
-                    row - запись с полями
-                output:
-                    vectors - эмбеддинги запроса
+        Получение эмбеддингов запроса по трем составляющим:
+            1) Оригинальный текст
+            2) Суммаризированный текст по описанию и комментариям
+            3) Комментарии
+        Args:
+            row (dict): запись с полями
+        Returns:
+            dict - эмбеддинги запроса
         """
 
         vectors = {"original": await self.container.model_client.embed(
@@ -120,13 +121,11 @@ class DataUpdater:
 
     async def _build_points(self, rows: List[dict]) -> dict:
         """
-            Асинхронное преобразование записей в PointStruct с параллельным получением эмбеддингов.
-
-            Args:
-                rows: список записей из БД
-
-            Returns:
-                dict: ключ — product, значение — список PointStruct
+        Асинхронное преобразование записей в PointStruct с параллельным получением эмбеддингов.
+        Args:
+            rows (List[dict]): список записей из БД
+        Returns:
+            dict: ключ — product, значение — список PointStruct
         """
         product_points = defaultdict(list)
 
@@ -160,10 +159,10 @@ class DataUpdater:
     async def _process_interval(self, interval: dict):
 
         """
-            Метод для работы с интервалами, обрабатывает строки батчами,
-                с сохранением в БД
-                input:
-                    dict - содержит дату начала и конца выборки
+        Метод для работы с интервалами, обрабатывает строки батчами,
+            с сохранением в БД
+        Args:
+            interval (dict) - содержит дату начала и конца выборки
         """
 
         log.info(f"Work with interval: {interval['from_date'].strftime('%Y-%m-%d %H:%M')} - "
@@ -180,9 +179,7 @@ class DataUpdater:
         log.info("Interval work completed")
 
     async def update(self):
-        """
-            Получение, обработка и сохранение данных в векторной БД
-        """
+        """Получение, обработка и сохранение данных в векторной БД"""
 
         date_intervals = self._build_intervals(self.date_from)
 
@@ -191,8 +188,7 @@ class DataUpdater:
 
     async def background_updater(self):
         """
-            Фоновая задача для обновления данных
-            Засыпает  до 3 часов ночи каждого дня
+        Фоновая задача для обновления данных. Засыпает  до 3 часов ночи каждого дня.
             По истечении таймера запсукает функцию на получение данных
         """
         try:

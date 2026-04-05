@@ -6,7 +6,10 @@ cfg = Config().data["model"]["chunking"]
 
 
 @dataclass
-class ChunkSettings:
+class LLMSettings:
+    """
+    Настройки для LLM и чанкинга
+    """
     max_context_tokens: int = cfg["max_content_tokens"]
     generation_tokens: int = cfg["generation_tokens"]
     token_safety_ratio: float = cfg["token_safety_ratio"]

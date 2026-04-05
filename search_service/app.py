@@ -29,10 +29,12 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """
-    Функция для первичного запуска приложения:
-    - создаёт контейнер
-    - передаёт его searcher и updater
-    - запускает updater
+        Первичный запуск приложения:
+            - создаёт контейнер
+            - передаёт его searcher и updater
+            - запускает updater
+            - подключает маршруты
+            - поднимает web-интерфейс
     """
 
     Config()  # Считываем файл на старте
@@ -61,9 +63,9 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """
-    Функция для корректного завершения приложения:
-    - закрывает gRPC клиент
-    - останавливает все сервисы
+        Функция для корректного завершения приложения:
+            - закрывает gRPC клиент
+            - останавливает все сервисы
     """
     container = getattr(app, "container", None)
     if container and hasattr(container, "model_client"):

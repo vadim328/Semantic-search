@@ -13,12 +13,13 @@ from tenacity import (
 )
 
 from contracts.generated import model_pb2, model_pb2_grpc
-from search_service.service.clients.chunk_settings import ChunkSettings as settings
+from search_service.service.clients.chunk_settings import LLMSettings as settings
 
 log = logging.getLogger(__name__)
 
 
 def is_retryable_grpc_error(exception):
+
     import grpc
 
     if isinstance(exception, grpc.aio.AioRpcError):
@@ -35,7 +36,9 @@ def is_retryable_grpc_error(exception):
 
 
 class ModelServiceClient:
-
+    """
+    Клиент для взаимодействия с сервисом моделей
+    """
     def __init__(self, url: str):
         self._channel = grpc.aio.insecure_channel(url)
         self.stub = model_pb2_grpc.ModelServiceStub(self._channel)
@@ -54,7 +57,13 @@ class ModelServiceClient:
         reraise=True,
     )
     async def generate(self, prompt: str) -> str:
-
+        """
+        Выполняет gRPC запрос к LLM модели
+        Args:
+            prompt (str): Промпт для LLM модели
+        Returns:
+            str: Ответ LLM модели
+        """
         log.debug(f"Prompt for summarization:\n{prompt}")
 
         response = await self.stub.Generate(
@@ -74,6 +83,13 @@ class ModelServiceClient:
         reraise=True,
     )
     async def embed(self, texts: Union[str, List[str]]) -> np.ndarray:
+        """
+        Выполняет gRPC запрос к Embedding модели
+        Args:
+            texts (Union[str, List[str]]): Строки(а) для получения эмбеддинга
+        Returns:
+            np.ndarray: Эмбеддинг текста
+        """
         if isinstance(texts, str):
             texts = [texts]
 

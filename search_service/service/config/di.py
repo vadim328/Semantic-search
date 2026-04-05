@@ -15,8 +15,7 @@ cfg = Config()
 
 class Container:
     """
-    Класс для инициализации объектов,
-    необходимых для работы сервиса
+    Класс для инициализации объектов, необходимых для работы сервиса
     """
 
     def __init__(self):
@@ -40,6 +39,7 @@ class Container:
 
     @classmethod
     async def create(cls) -> "Container":
+        """Асинхронная фабрика для инициализации класса"""
         self = cls()
 
         await self._build_collections()
@@ -47,6 +47,8 @@ class Container:
         return self
 
     async def _build_collections(self):
+
+        """Асинхронная инициализация коллекций"""
 
         log.info("Initializing vector DB collections")
 
@@ -69,6 +71,7 @@ container: Container | None = None
 
 
 async def init_container() -> Container:
+    """Инициализация di-контейнера"""
     global container
 
     if container is None:
