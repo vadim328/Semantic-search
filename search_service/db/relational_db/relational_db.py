@@ -85,6 +85,6 @@ class RelationalDatabaseTouch:
         Returns:
             requests (List[dict]): Запросы полученные из БД
         """
-        requests = self.requests
+        requests = self.requests.copy()
         self.requests.clear()
         return requests
