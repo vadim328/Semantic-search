@@ -14,6 +14,11 @@ class SummarizationOrchestrator:
     def __init__(self, client):
         self.client = client
 
+    async def _generate(self, prompt):
+        result = await self.client.generate(prompt)
+        log.info(f"Result summarization:\n{result}")
+        return result
+
     async def _map_phase(self,
                          prompts: List[str],
                          max_concurrent: int) -> List[str]:
@@ -23,7 +28,7 @@ class SummarizationOrchestrator:
         async def limited_generate(prompt: str, idx: int):
             async with semaphore:
                 log.info(f"Start summarization for chunk {idx + 1}/{len(prompts)}")
-                result = await self.client.generate(prompt)
+                result = await self._generate(prompt)
                 log.info(f"Summarization for chunk {idx + 1}/{len(prompts)} - finish")
                 return result
 
@@ -52,7 +57,7 @@ class SummarizationOrchestrator:
         )
 
         log.info("Result for chunked summarization:")
-        return await self.client.generate(final_prompt)
+        return await self._generate(final_prompt)
 
     async def summarize(self,
                         problem: str,
@@ -68,7 +73,7 @@ class SummarizationOrchestrator:
 
         # простой кейс
         if len(prompts) == 1:
-            return await self.client.generate(prompts[0])
+            return await self._generate(prompts[0])
 
         log.info("Using chunked summarization")
 
