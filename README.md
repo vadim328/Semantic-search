@@ -1,6 +1,6 @@
-📌 Semantic Search Engine
+📌 Semantic Search Project
 
-FastAPI + Qdrant + BERT + BM25 + LLM
+(FastAPI + Qdrant + BM25) + (gRPC + Llama + LLM + BERT)
 
 Сервис семантического поиска и суммаризации, предназначенный для поиска схожих запросов с высокой точностью за счёт комбинации векторных и классических методов ранжирования.
 
@@ -49,18 +49,6 @@ project/
 │   └── generated/                      # gRPC - методы для интеграции с сервисом моделей
 │   └── proto/                          # Прото-файл gRPC
 │
-├── frontend/
-│   └── static/               
-│       └── css/                        # Стили 
-│       └── js/
-│           └── api.js                  # Методы для выполнения API запросов к бэкенду сервиса
-│           └── customSelect.js         # Формирование селектов для полей "Продукт" и "Клиент"
-│           └── form.js                 # Формирование параметров для запроса поиска
-│           └── main.js                 # Основной скрипт для формирование веб-интерфейса и обработки запросов
-│           └── table.js                # Формирование результатов запроса поиска
-│           └── ui.js                   # Отображение анимации
-│   └── index.html                      # HTML-файл веб-интерфейса (для демонстрации)
-│
 ├── model_service/                      # Сервис моделей
 │   └── Docker/                
 │       └── Dockerfile                  # Dockerfile для создания образа приложения
@@ -95,6 +83,19 @@ project/
 │   └── Docker/
 │       └── Dockerfile                  # Dockerfile для создания образа приложения
 │       └── docker-compose.yaml         # yaml файл для быстрого развертывания приложения из готового образа + Qdrant
+│
+│   └── frontend/                       # web-interface для сервиса поиска
+│     └── static/               
+│       └── css/                        # Стили 
+│       └── js/
+│           └── api.js                  # Методы для выполнения API запросов к бэкенду сервиса
+│           └── customSelect.js         # Формирование селектов для полей "Продукт" и "Клиент"
+│           └── form.js                 # Формирование параметров для запроса поиска
+│           └── main.js                 # Основной скрипт для формирование веб-интерфейса и обработки запросов
+│           └── table.js                # Формирование результатов запроса поиска
+│           └── ui.js                   # Отображение анимации
+│     └── index.html                     # HTML-файл веб-интерфейса (для демонстрации)
+│
 │   └── service/
 │       └── clients/
 │           └── model_client.py         # Клиент для взаимодействия с моделями по gRPC
@@ -135,6 +136,7 @@ pip install -r requirements.txt
 - SQLAlchemy
 - rank_bm25
 - llama-cpp-python
+- grpc
 ***
 🐳 Запуск
 
@@ -153,7 +155,7 @@ mkdir /opt/supportai/qdrant_storage/
 </pre>
 
 2) В директорию **/opt/supportai/sherlock/config/** положить конфигурационный файл приложения:
-- config.yaml
+   - config.yaml
 
 Для сервиса моделей
 
@@ -166,14 +168,14 @@ mkdir /opt/supportai/athena/models/llm
 </pre>
 
 2) В директорию **/opt/supportai/athena/** положить конфигурационный файл приложения:
-- config.yaml
+   - config.yaml
 3) В директорию **/opt/supportai/athena/models/embedding** положить эмбеддинг-модель
 3) В директорию **/opt/supportai/athena/models/llm** положить llm-модель
 
 
 Запустить сервисы через docker-compose:
 <pre>
-docker compose up -d --build
+docker compose up -d
 </pre>
 
 Приложение будет доступно по адресу (порт можно изменить в compose-файле):
