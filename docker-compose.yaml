@@ -44,4 +44,5 @@ services:
 
 networks:
   support_search:
+    name: support_search
     driver: bridge
