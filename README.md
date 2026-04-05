@@ -145,8 +145,9 @@ pip install -r requirements.txt
 1) contracts
 2) search_service/model_service
 3) Dockerfile
-4) .dockerignore
-5) docker-compose.yaml - Опционально, если требуется запустить сервис отдельно
+4) requirements.txt
+5) .dockerignore
+6) docker-compose.yaml - Опционально, если требуется запустить сервис отдельно
 
 Собрать образы c помощью Dockerfile (Dockerfile должен быть в корне приложения):
 <pre>
