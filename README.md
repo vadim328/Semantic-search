@@ -140,6 +140,14 @@ pip install -r requirements.txt
 ***
 🐳 Запуск
 
+Директория для создания образа должна содержать:
+
+1) contracts
+2) search_service/model_service
+3) Dockerfile
+4) .dockerignore
+5) docker-compose.yaml - Опционально, если требуется запустить сервис отдельно
+
 Собрать образы c помощью Dockerfile (Dockerfile должен быть в корне приложения):
 <pre>
 docker build -t "image-name" .
