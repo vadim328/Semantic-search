@@ -98,14 +98,16 @@ class DataUpdater:
                 output:
                     vectors - эмбеддинги запроса
         """
-        vectors = {}
 
-        # Очищенные комментарии сохраняем чтоб не чистить 2 раза
-        comments = transforms_comments(text=row["comments"])["text"]
-
-        vectors["original"] = await self.container.model_client.embed(
+        vectors = {"original": await self.container.model_client.embed(
             transforms_bert(text=row["problem"])["text"]
-        )
+        )}
+
+        if row["comments"]:
+            comments = transforms_comments(text=row["comments"])["text"]
+            vectors["comments"] = await self.container.model_client.embed(comments)
+        else:
+            comments = None
 
         problem_summary = await self.container.summarization_orchestrator.summarize(
             problem=transforms_nn(text=row["problem"])["text"],
@@ -113,8 +115,6 @@ class DataUpdater:
             max_concurrent=self.max_concurrent,
         )
         vectors["summary"] = await self.container.model_client.embed(problem_summary)
-
-        vectors["comments"] = await self.container.model_client.embed(comments)
 
         return vectors
 
