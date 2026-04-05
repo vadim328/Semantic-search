@@ -55,7 +55,7 @@ async def startup_event():
         app.include_router(router)
 
     # Статика фронтенда
-    app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+    app.mount("/", StaticFiles(directory="search_service/frontend", html=True), name="frontend")
 
 
 @app.on_event("shutdown")
