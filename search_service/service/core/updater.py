@@ -50,7 +50,7 @@ class DataUpdater:
                 list: Список кортежей с начальной и конечной датами
 
         """
-        log.info("Calculation data intervals ...")
+        log.info("Calculation data intervals")
         intervals = []
         start_interval = start_interval.timestamp()
         end_interval = datetime.now().timestamp()
@@ -130,29 +130,32 @@ class DataUpdater:
         """
         product_points = defaultdict(list)
 
+        count_missing_rows = 0
         for row in rows:
-            log.info(f"Summarize and fetch embedding for request - {row['number']}")
-            vectors = await self._get_embedding(row)
+            try:
+                log.info(f"Summarize and fetch embedding for request - {row['number']}")
+                vectors = await self._get_embedding(row)
 
-            product_points[row["product"]].append(
-                PointStruct(
-                    id=int(row["number"]),
-                    vector=vectors,
-                    payload={
-                        "text": row["problem"],
-                        "client": row["client"],
-                        "registry_date": row["registry_date"].timestamp(),
-                        "date_end": row["date_end"].timestamp(),
-                    }
+                product_points[row["product"]].append(
+                    PointStruct(
+                        id=int(row["number"]),
+                        vector=vectors,
+                        payload={
+                            "text": row["problem"],
+                            "client": row["client"],
+                            "registry_date": row["registry_date"].timestamp(),
+                            "date_end": row["date_end"].timestamp(),
+                        }
+                    )
                 )
-            )
+            except Exception as e:
+                log.error(f"Error processing string {row.get('number')}: {e}")
+                count_missing_rows += 1
+                if count_missing_rows >= 10:
+                    raise ValueError("A lot of missing lines")
+                continue
 
         return product_points
-
-    @classmethod
-    def chunked(cls, iterable, size):
-        for i in range(0, len(iterable), size):
-            yield iterable[i:i + size]
 
     async def _process_interval(self, interval: dict):
 
@@ -163,37 +166,16 @@ class DataUpdater:
                     dict - содержит дату начала и конца выборки
         """
 
-        log.info(f"Work with interval: {interval['from_date'].strftime('%Y-%m-%d, %H:%M')} - "
-                 f"{interval['to_date'].strftime('%Y-%m-%d, %H:%M')} ...")
+        log.info(f"Work with interval: {interval['from_date'].strftime('%Y-%m-%d %H:%M')} - "
+                 f"{interval['to_date'].strftime('%Y-%m-%d %H:%M')}")
 
         await self.container.relational_db.fetch_data(interval)
 
         rows = self.container.relational_db.get_data()
 
-        batch_size = 5
-        max_retries = 3
+        product_points = await self._build_points(rows)
 
-        log.info(f"Batches for processing - {int(len(rows)/batch_size + 1)}")
-
-        for i, batch in enumerate(self.chunked(rows, batch_size), start=1):
-
-            # три раза пытаемся обработать батч, иначе пропускаем его
-            for attempt in range(1, max_retries + 1):
-                log.info(f"Processing batch {i} ({len(batch)} rows)")
-                try:
-                    product_points = await self._build_points(batch)
-                    await self._save_points(product_points)
-
-                    log.info(f"Batch {i} completed on attempt {attempt}")
-                    break
-
-                except Exception:
-                    log.exception(f"Batch {i} failed on attempt {attempt}")
-
-                    if attempt == max_retries:
-                        log.error(f"Batch {i} could not processed, skipping")
-                    else:
-                        await asyncio.sleep(10 ** attempt)
+        await self._save_points(product_points)
 
         log.info("Interval work completed")
 
@@ -201,7 +183,6 @@ class DataUpdater:
         """
             Получение, обработка и сохранение данных в векторной БД
         """
-        log.info("Request for data ...")
 
         date_intervals = self._build_intervals(self.date_from)
 
