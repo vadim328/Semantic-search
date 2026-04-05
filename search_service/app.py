@@ -51,7 +51,7 @@ async def startup_event():
         container=container
     )
     for router in routers:
-        log.info(f"Include api router - {router}")
+        log.info(f"Include api router - prefix={router.prefix}")
         app.include_router(router)
 
     # Статика фронтенда
