@@ -10,8 +10,18 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class EmbeddingModel:
-    """Класс эмбеддинг модели"""
-    def __init__(self, model_path, file_name=None):
+    """Инференс для Эмбеддинг моделей"""
+    def __init__(self,
+                 model_path: str,
+                 file_name=None
+                 ):
+        """
+        Инициализация энкодера и токенайзера модели
+        Args:
+            model_path (str): Путь до модели
+            file_name (str | None): Название модели
+        """
+
         self.encoder = ORTModelForFeatureExtraction.from_pretrained(
             model_path,
             file_name=file_name
@@ -25,14 +35,13 @@ class EmbeddingModel:
             normalize=True
     ):
         """
-            Получение эмбеддинга для текстов
-            :input:
-                Any (str/list): Текст
-                int: Размер батча
-                bool: Определяет необходимость нормализация вектора
-
-            :output:
-                list: список полученных эмбеддингов
+        Получение эмбеддинга для текстов
+        Args:
+            texts (List): Текст
+            batch_size (int): Размер батча
+            normalize (bool): Определяет необходимость нормализация вектора
+        Returns:
+            List: список полученных эмбеддингов
         """
         all_embeddings = []
         for i in range(0, len(texts), batch_size):

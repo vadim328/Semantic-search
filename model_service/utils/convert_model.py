@@ -5,7 +5,8 @@ from optimum.onnxruntime.configuration import OptimizationConfig
 
 
 def model_to_onnx(model_name: str, export="./onnx"):
-    """Загружает, конвертирует модель в формат onnx и сохраняет
+    """
+    Загружает, конвертирует модель в формат onnx и сохраняет
     Args:
         model_name: id модели на HuggingFace.
         export: Директория для сохранения
@@ -18,7 +19,8 @@ def model_to_onnx(model_name: str, export="./onnx"):
 
 
 def model_optimizer(model_path: str):
-    """Берет исходную модель в формате onnx и оптимизирует
+    """
+    Берет исходную модель в формате onnx и оптимизирует
     Args:
         model_path: Путь до модели, не включая саму модель
     """
