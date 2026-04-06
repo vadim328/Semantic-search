@@ -6,7 +6,6 @@ import numpy as np
 import logging
 
 log = logging.getLogger(__name__)
-device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class EmbeddingModel:
@@ -27,6 +26,13 @@ class EmbeddingModel:
             file_name=file_name
             )
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    @staticmethod
+    def mean_pooling(last_hidden_state, attention_mask):
+        mask = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
+        return (last_hidden_state * mask).sum(1) / mask.sum(1)
 
     def encode(
             self,
@@ -51,7 +57,7 @@ class EmbeddingModel:
             # отключаем вычисление градиентов для инференса
             with torch.no_grad():
                 outputs = self.encoder(**inputs)
-                embeddings = outputs.last_hidden_state.mean(dim=1)
+                embeddings = self.mean_pooling(outputs.last_hidden_state, inputs["attention_mask"])
 
             # Нормализуем для адекватного вычисления коминусного расстояния
             if normalize:
