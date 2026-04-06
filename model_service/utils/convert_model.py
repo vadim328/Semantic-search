@@ -1,43 +1,71 @@
-from optimum.onnxruntime import ORTModelForFeatureExtraction
+import os
+from optimum.onnxruntime import ORTModelForFeatureExtraction, ORTOptimizer, ORTQuantizer
+from optimum.onnxruntime.configuration import OptimizationConfig, QuantizationConfig
+from optimum.onnxruntime.configuration import QuantizationMode, QuantFormat
 from transformers import AutoTokenizer
-from optimum.onnxruntime import ORTOptimizer
-from optimum.onnxruntime.configuration import OptimizationConfig
 
 
-def model_to_onnx(model_name: str, export="./onnx"):
+def model_to_onnx(model_name: str, export_dir="./onnx"):
     """
     Загружает, конвертирует модель в формат onnx и сохраняет
     Args:
         model_name: id модели на HuggingFace.
-        export: Директория для сохранения
+        export_dir: Директория для сохранения
     """
-    ort_model = ORTModelForFeatureExtraction.from_pretrained(model_name, export=True)
+    os.makedirs(export_dir, exist_ok=True)
+
+    # Экспорт модели в ONNX
+    model = ORTModelForFeatureExtraction.from_pretrained(
+        model_name,
+        export=True,
+    )
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    ort_model.save_pretrained(export)
-    tokenizer.save_pretrained(export)
+    model.save_pretrained(export_dir)
+    tokenizer.save_pretrained(export_dir)
+
+    print(f"Модель экспортирована в {export_dir}")
 
 
-def model_optimizer(model_path: str):
+def model_optimizer(model_dir: str):
     """
     Берет исходную модель в формате onnx и оптимизирует
     Args:
-        model_path: Путь до модели, не включая саму модель
+        model_dir: Путь до модели, не включая саму модель
     """
-    # Конфигурация оптимизации
-    optimization_config = OptimizationConfig(optimization_level=99)
+    optimizer = ORTOptimizer.from_pretrained(model_dir)
 
-    # Создаём оптимизатор
-    optimizer = ORTOptimizer.from_pretrained(model_path)
-
-    # Применяем оптимизацию
+    # Оптимизация (уровень 2 — безопасно для embeddings)
+    optimization_config = OptimizationConfig(optimization_level=2)
     optimizer.optimize(
-        save_dir=model_path+"/optim/",
+        save_dir=os.path.join(model_dir, "optim"),
         optimization_config=optimization_config,
     )
+    print(f"Оптимизированная модель сохранена в {model_dir}/optim")
+
+
+def model_quantizer(model_dir: str):
+    """
+    Берет оптимизированную модель в формате onnx и квантизирует
+    Args:
+        model_dir: Путь до модели, не включая саму модель
+    """
+
+    # Квантование модели (для ускорения инференса)
+    quantizer = ORTQuantizer.from_pretrained(os.path.join(model_dir))
+    quantization_config = QuantizationConfig(
+        is_static=False,    # динамическое квантование
+        per_channel=True,
+        format=QuantFormat.QDQ,
+        mode=QuantizationMode.IntegerOps
+    )
+    quantizer.quantize(save_dir=os.path.join(model_dir, "quant"), quantization_config=quantization_config)
+    print(f"Квантованная модель сохранена в {model_dir}/quant")
 
 
 if __name__ == "__main__":
-    export = "./onnx"
-    model_to_onnx("deepvk/USER-bge-m3", export=export)
-    model_optimizer(export)
+    export = "../models/embedding/e5/"
+    #model_to_onnx("intfloat/multilingual-e5-large", export_dir=export)
+    #model_optimizer(export)
+    model_quantizer(export)
+
