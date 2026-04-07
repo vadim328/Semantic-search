@@ -39,9 +39,9 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
         )
 
     def Generate(self,
-                 request: model_pb2.GenerateRequest,
+                 request: model_pb2.GenerateRequest,      # type: ignore
                  context: grpc.ServicerContext
-                 ) -> model_pb2.GenerateResponse:
+                 ) -> model_pb2.GenerateResponse:         # type: ignore
         """
         Генерация текста на основе входного промпта.
 
@@ -59,12 +59,12 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
             request.prompt,
         )
 
-        return model_pb2.GenerateResponse(text=result)
+        return model_pb2.GenerateResponse(text=result)    # type: ignore
 
     def Embed(self,
-              request: model_pb2.EmbeddingRequest,
+              request: model_pb2.EmbeddingRequest,        # type: ignore
               context: grpc.ServicerContext
-              ) -> model_pb2.EmbeddingResponse:
+              ) -> model_pb2.EmbeddingResponse:           # type: ignore
         """
         Получение эмбеддингов для списка текстов.
 
@@ -79,7 +79,7 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
                 где каждый эмбеддинг представлен как список чисел.
         """
         embeddings = self.embedding_model.embed(
-            texts=list(request.texts),
+            texts=list(request.texts),  # request.texts - объект protobuf, преобразовываем в список обратно
             prefix=request.prefix,
         )
 
@@ -87,10 +87,10 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
 
         for emb in embeddings:
             response_embeddings.append(
-                model_pb2.Embedding(vector=emb.tolist())
+                model_pb2.Embedding(vector=emb.tolist())  # type: ignore
             )
 
-        return model_pb2.EmbeddingResponse(
+        return model_pb2.EmbeddingResponse(               # type: ignore
             embeddings=response_embeddings
         )
 

@@ -5,7 +5,6 @@ import torch.nn.functional as F
 from optimum.onnxruntime import ORTModelForFeatureExtraction
 from transformers import AutoTokenizer
 import numpy as np
-from numpy import ndarray
 import logging
 
 log = logging.getLogger(__name__)
@@ -111,7 +110,7 @@ class EmbeddingModel:
             texts: List,
             prefix: str,
             batch_size=8,
-    ) -> ndarray[list[Tensor]]:
+    ) -> np.ndarray:
 
         """
         Получение эмбеддинга для текстов

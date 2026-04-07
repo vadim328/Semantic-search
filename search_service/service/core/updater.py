@@ -101,12 +101,16 @@ class DataUpdater:
         """
 
         vectors = {"original": await self.container.model_client.embed(
-            transforms_bert(text=row["problem"])["text"]
+            texts=transforms_bert(text=row["problem"])["text"],
+            prefix="passage",
         )}
 
         if row["comments"]:
             comments = transforms_comments(text=row["comments"])["text"]
-            vectors["comments"] = await self.container.model_client.embed(comments)
+            vectors["comments"] = await self.container.model_client.embed(
+                texts=comments,
+                prefix="passage",
+            )
         else:
             comments = None
 
@@ -115,7 +119,10 @@ class DataUpdater:
             comments=comments,
             max_concurrent=self.max_concurrent,
         )
-        vectors["summary"] = await self.container.model_client.embed(problem_summary)
+        vectors["summary"] = await self.container.model_client.embed(
+            texts=problem_summary,
+            prefix="passage",
+        )
 
         return vectors
 

@@ -104,10 +104,16 @@ class SemanticSearchEngine:
                 comments=transforms_comments(text=req_data["comments"])["text"]
             )
 
-            return await self.container.model_client.embed(query)
+            return await self.container.model_client.embed(
+                texts=query,
+                prefix="query"
+            )
 
         text = transforms_bert(text=query)["text"]
-        return await self.container.model_client.embed(text)
+        return await self.container.model_client.embed(
+            texts=text,
+            prefix="query"
+        )
 
     async def search(
             self,

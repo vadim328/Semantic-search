@@ -82,11 +82,15 @@ class ModelServiceClient:
         before_sleep=before_sleep_log(log, logging.WARNING),
         reraise=True,
     )
-    async def embed(self, texts: Union[str, List[str]]) -> np.ndarray:
+    async def embed(
+            self,
+            texts: Union[str, List[str]],
+            prefix: str) -> np.ndarray:
         """
         Выполняет gRPC запрос к Embedding модели
         Args:
             texts (Union[str, List[str]]): Строки(а) для получения эмбеддинга
+            prefix (str): query/passage. query - для поиска passage - для сохранения в БД
         Returns:
             np.ndarray: Эмбеддинг текста
         """
@@ -94,7 +98,10 @@ class ModelServiceClient:
             texts = [texts]
 
         response = await self.stub.Embed(
-            model_pb2.EmbeddingRequest(texts=texts),
+            model_pb2.EmbeddingRequest(
+                texts=texts,
+                prefix=prefix,
+            ),
             timeout=10.0,
         )
 
