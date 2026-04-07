@@ -1,7 +1,10 @@
 # service/updater.py
 import asyncio
 from typing import List, Dict
-from search_service.text_processing.text_preparation import transforms_bert, transforms_nn, transforms_comments
+from search_service.text_processing.text_preparation import \
+    transforms_embed, \
+    transforms_llm, \
+    transforms_comments
 from qdrant_client.models import PointStruct
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -101,7 +104,7 @@ class DataUpdater:
         """
 
         vectors = {"original": await self.container.model_client.embed(
-            texts=transforms_bert(text=row["problem"])["text"],
+            texts=transforms_embed(text=row["problem"])["text"],
             prefix="passage",
         )}
 
@@ -115,7 +118,7 @@ class DataUpdater:
             comments = None
 
         problem_summary = await self.container.summarization_orchestrator.summarize(
-            problem=transforms_nn(text=row["problem"])["text"],
+            problem=transforms_llm(text=row["problem"])["text"],
             comments=comments,
             max_concurrent=self.max_concurrent,
         )

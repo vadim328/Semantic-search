@@ -30,7 +30,7 @@ transforms_bm25 = TT.TextCompose([
     ]),
 ])
 
-transforms_bert = TT.TextCompose([
+transforms_embed = TT.TextCompose([
     TT.RemoveFirstWords([r'Erudite']),
     TT.CleanText(
         no_emoji=True,
@@ -54,7 +54,7 @@ transforms_bert = TT.TextCompose([
     ]),
 ])
 
-transforms_nn = TT.TextCompose([
+transforms_llm = TT.TextCompose([
     TT.RemoveLogs(),
     TT.ReplaceText([
         (r'\b[A-Za-z]{8,}\b', ''),
@@ -102,7 +102,7 @@ def preparation_list(texts: list[str]) -> tuple[list[list[str]], list[str]]:
             - второй — тексты, подготовленные для BERT.
     """
     tokens_bm25 = [transforms_bm25(text=text)["text"].split() for text in texts]
-    texts_bert = [transforms_bert(text=text)["text"] for text in texts]
+    texts_bert = [transforms_embed(text=text)["text"] for text in texts]
     return tokens_bm25, texts_bert
 
 
@@ -118,6 +118,6 @@ def preparation_str(text: str) -> tuple[list[str], str]:
             - второй — текст, подготовленный для BERT.
     """
     tokens_bm25 = transforms_bm25(text=text)["text"].split()
-    text_bert = transforms_bert(text=text)["text"]
+    text_bert = transforms_embed(text=text)["text"]
 
     return tokens_bm25, text_bert

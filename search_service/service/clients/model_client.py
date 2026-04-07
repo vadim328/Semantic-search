@@ -102,7 +102,7 @@ class ModelServiceClient:
                 texts=texts,
                 prefix=prefix,
             ),
-            timeout=10.0,
+            timeout=60.0,
         )
 
         if not response.embeddings:

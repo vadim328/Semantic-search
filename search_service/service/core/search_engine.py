@@ -1,6 +1,9 @@
 from typing import List, Dict, Any, Union
 from search_service.service.core.scorer import HybridScorer
-from search_service.text_processing.text_preparation import transforms_bert, transforms_nn, transforms_comments
+from search_service.text_processing.text_preparation import \
+    transforms_embed, \
+    transforms_llm, \
+    transforms_comments
 from qdrant_client.models import PointStruct
 from search_service.service.utils.utils import timestamp_to_date
 import asyncio
@@ -100,7 +103,7 @@ class SemanticSearchEngine:
             req_data = req_data[0]  # Берем первую и единствуенную строку
 
             query = await self.container.model_client.make_summarize(
-                problem=transforms_nn(text=req_data["problem"])["text"],
+                problem=transforms_llm(text=req_data["problem"])["text"],
                 comments=transforms_comments(text=req_data["comments"])["text"]
             )
 
@@ -109,7 +112,7 @@ class SemanticSearchEngine:
                 prefix="query"
             )
 
-        text = transforms_bert(text=query)["text"]
+        text = transforms_embed(text=query)["text"]
         return await self.container.model_client.embed(
             texts=text,
             prefix="query"

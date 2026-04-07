@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from search_service.api.routes.validate_params import validate_params
 from search_service.service.clients.summarization_orchestrator import SummarizationOrchestrator
-from search_service.text_processing.text_preparation import transforms_nn, transforms_comments
+from search_service.text_processing.text_preparation import transforms_llm, transforms_comments
 import logging
 
 log = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def create_summarize_router(summarization_orchestrator: SummarizationOrchestrato
 
         # Применяем очистку текста и комментариев
         def clean_input(dirty_text: str, dirty_comments: str = None):
-            clean_text = transforms_nn(text=dirty_text)["text"]  # общий pipeline для текста
+            clean_text = transforms_llm(text=dirty_text)["text"]  # общий pipeline для текста
             clean_comments_text = transforms_comments(text=dirty_comments)["text"] if dirty_comments else None
             return clean_text, clean_comments_text
 
