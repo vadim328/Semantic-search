@@ -20,6 +20,5 @@ class LLMSettings:
     prompt_template: str = (
         "Сформируй структурированное техническое резюме проблемы.\n\n"
         "Описание проблемы:\n{problem}\n\n"
-        "Комментарии:\n{comments}\n"
-        "Ответ:\n"
+        "Комментарии:\n{comments}"
     )

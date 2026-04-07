@@ -4,7 +4,7 @@ import asyncio
 from typing import List
 
 from search_service.service.clients.summarization_builder import build_summarization_prompts
-from search_service.service.clients.chunk_settings import LLMSettings as settings
+from search_service.service.clients.llm_settings import LLMSettings as settings
 
 log = logging.getLogger(__name__)
 

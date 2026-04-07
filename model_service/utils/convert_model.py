@@ -65,7 +65,7 @@ def model_quantizer(model_dir: str):
 
 if __name__ == "__main__":
     export = "../models/embedding/e5/"
-    #model_to_onnx("intfloat/multilingual-e5-large", export_dir=export)
+    model_to_onnx("intfloat/multilingual-e5-large", export_dir=export)
     #model_optimizer(export)
     model_quantizer(export)
 

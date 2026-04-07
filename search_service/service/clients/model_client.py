@@ -13,7 +13,7 @@ from tenacity import (
 )
 
 from contracts.generated import model_pb2, model_pb2_grpc
-from search_service.service.clients.chunk_settings import LLMSettings as settings
+from search_service.service.clients.llm_settings import LLMSettings as settings
 
 log = logging.getLogger(__name__)
 
