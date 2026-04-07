@@ -78,7 +78,10 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
             model_pb2.EmbeddingResponse: объект со списком эмбеддингов,
                 где каждый эмбеддинг представлен как список чисел.
         """
-        embeddings = self.embedding_model.encode(list(request.texts))
+        embeddings = self.embedding_model.embed(
+            texts=list(request.texts),
+            prefix=request.prefix,
+        )
 
         response_embeddings = []
 
