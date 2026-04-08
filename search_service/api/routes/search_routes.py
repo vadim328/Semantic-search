@@ -3,6 +3,7 @@ from fastapi import APIRouter, Request
 from search_service.service.core.search_engine import SemanticSearchEngine
 from fastapi.responses import JSONResponse
 from search_service.api.routes.validate_params import validate_params
+from search_service.service.core.search_mode import SearchMode
 from search_service.config import Config
 import logging
 
@@ -75,7 +76,15 @@ def create_search_routes(searcher: SemanticSearchEngine) -> APIRouter:
             f"filters: {filters}"
         )
 
-        result = await searcher.search(query, product, search_mode, limit, alpha, exact, filters)
+        result = await searcher.search(
+            query,
+            product,
+            SearchMode(search_mode),
+            limit,
+            alpha,
+            exact,
+            filters
+        )
         log.info(f"Result search request : {result}")
 
         return JSONResponse(result)

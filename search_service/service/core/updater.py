@@ -151,6 +151,7 @@ class DataUpdater:
                         vector=vectors,
                         payload={
                             "text": row["problem"],
+                            "comments": row["comments"],
                             "client": row["client"],
                             "registry_date": row["registry_date"].timestamp(),
                             "date_end": row["date_end"].timestamp(),

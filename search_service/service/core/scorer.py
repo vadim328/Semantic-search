@@ -3,6 +3,7 @@ from typing import List, Dict
 import numpy as np
 from rank_bm25 import BM25Okapi
 from search_service.text_processing.text_preparation import transforms_bm25
+from search_service.service.core.search_mode import SearchMode
 import logging
 
 log = logging.getLogger(__name__)
@@ -14,6 +15,7 @@ class HybridScorer:
         self,
         hits: Dict,
         query_text: str,
+        search_mode: SearchMode,
         alpha: float = 0.5
     ) -> List[Dict]:
         """
@@ -35,9 +37,8 @@ class HybridScorer:
 
         log.info(f"cosine_scores - {cosine_scores}")
 
-        # --- BM25 ---
         tokenized_docs = [
-            transforms_bm25(h["text"])["text"].split()
+            transforms_bm25(search_mode.extract_text(h))["text"].split()
             for h in hits.values()
         ]
 

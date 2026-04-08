@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 import torch
 from torch import Tensor
 import torch.nn.functional as F
@@ -39,75 +39,125 @@ class EmbeddingModel:
         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
         return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
 
-    @staticmethod
-    def chunk_tokens(
-            tokens: List[int],
-            max_length: int = 512,
+    def weighted_pooling(
+            self,
+            chunks: List[str],
+            device: Any) -> Tensor:
+        """
+        Вычисление весов чанков пропорционально их длине
+        Args:
+            chunks (List[str]): Список текстовых чанков
+            device (Any): Device
+        Returns:
+            weights (Tensor): Веса чанков
+        """
+
+        lengths = []
+        for chunk in chunks:
+            tokens = self.tokenizer(
+                chunk,
+                add_special_tokens=False
+            )["input_ids"]
+            lengths.append(len(tokens))
+
+        lengths = torch.tensor(
+            lengths,
+            device=device,
+            dtype=torch.float32
+        )
+
+        # нормализуем веса
+        weights = lengths / (lengths.sum() + 1e-8)
+
+        return weights
+
+    def chunk_text(
+            self,
+            text: str,
             overlap: int = 50
-    ) -> List[List[int]]:
+    ) -> List[str]:
         """
         Разбивает текст на чанки по токенам с перекрытием
         Args:
-            tokens (List[int]): Токены
-            max_length (int): Максимальное количество токенов в чанке (ограничение модели)
+            text (str): Полный текст проблемы
             overlap (int): Перекрытие, часть токенов из предыдущего чанка
         Returns:
-            chunks (List[List[int]])
+            chunks (List[str]): Чанки текста
         """
 
+        tokens = self.tokenizer(
+            text,
+            add_special_tokens=False,
+            return_attention_mask=False,
+            return_tensors=None
+        )["input_ids"]
+
         chunks = []
+
+        if len(tokens) <= self.max_length:
+            return [text]
+
         start = 0
 
         while start < len(tokens):
-            end = start + max_length
+            end = start + self.max_length
             chunk_tokens = tokens[start:end]
-            chunks.append(chunk_tokens)
-            # шаг с overlap
-            start += max_length - overlap
+            chunk_text = self.tokenizer.decode(
+                chunk_tokens,
+                skip_special_tokens=True,
+                clean_up_tokenization_spaces=False
+            )
+            chunks.append(chunk_text)
+            start += self.max_length - overlap
+
         return chunks
 
     def _encode(
             self,
-            chunks: List,
+            chunks: List[str],
             batch_size: int,
-            normalize=True
     ) -> Tensor:
         """
         Получение эмбеддинга для текстов
         Args:
-            chunks (List):
+            chunks (List[str]):
             batch_size (int): Размер батча
-            normalize (bool): Определяет необходимость нормализация вектора
         Returns:
             Tensor: Полученный эмбеддинг
         """
 
-        # создаем батчи чанков
-        chunk_embeddings = []
+        all_embeddings = []
+
         for i in range(0, len(chunks), batch_size):
             batch_chunks = chunks[i:i + batch_size]
-            # конвертируем обратно в тензор с паддингом
-            batch_encodings = self.tokenizer.pad(
-                {"input_ids": batch_chunks},
-                return_tensors="pt",
+
+            batch = self.tokenizer(
+                batch_chunks,
+                padding=True,
+                truncation=True,
+                max_length=self.max_length,
+                return_tensors="pt"
             )
-            batch_encodings = {k: v.to(self.device) for k, v in batch_encodings.items()}
+
+            batch = {k: v.to(self.device) for k, v in batch.items()}
 
             with torch.no_grad():
-                outputs = self.encoder(**batch_encodings)
-                embeddings = self.mean_pooling(outputs.last_hidden_state, batch_encodings["attention_mask"])
-                chunk_embeddings.append(embeddings)
+                outputs = self.encoder(**batch)
+                embeddings = self.mean_pooling(
+                    outputs.last_hidden_state,
+                    batch["attention_mask"]
+                )
 
-        # усредняем эмбеддинги всех чанков для одного текста
-        final_embedding = torch.cat(chunk_embeddings, dim=0).mean(dim=0, keepdim=True)
-        if normalize:
-            final_embedding = F.normalize(final_embedding, p=2, dim=-1)
+                # Нормализация каждого чанка
+                embeddings = F.normalize(embeddings, p=2, dim=-1)
 
-        return final_embedding
+                all_embeddings.append(embeddings)
+
+        return torch.cat(all_embeddings, dim=0)
 
     def embed(
             self,
-            texts: List,
+            texts: List[str],
             prefix: str,
             batch_size=8,
     ) -> np.ndarray:
@@ -126,15 +176,25 @@ class EmbeddingModel:
 
         for text in texts:
             text = f"{prefix}: {text}"
-            tokens = self.tokenizer(
+
+            # делим текст на чанки
+            chunks = self.chunk_text(
                 text,
-                add_special_tokens=False,
-            )["input_ids"]
-            if len(tokens) <= self.max_length:
-                chunks = [tokens]
-            else:
-                chunks = self.chunk_tokens(tokens, max_length=self.max_length)
+            )
 
-            all_embeddings.append(self._encode(chunks, batch_size=batch_size))
+            # получаем эмбеддинги чанков
+            chunk_embeddings = self._encode(chunks, batch_size)
 
-        return np.vstack(all_embeddings)
+            # weighted pooling
+            weights = self.weighted_pooling(
+                chunks,
+                chunk_embeddings.device
+            )
+            final_embedding = (chunk_embeddings * weights.unsqueeze(1)).sum(dim=0, keepdim=True)
+
+            # финальная нормализация
+            final_embedding = F.normalize(final_embedding, p=2, dim=-1)
+
+            all_embeddings.append(final_embedding)
+
+        return np.vstack([emb.cpu().numpy() for emb in all_embeddings])

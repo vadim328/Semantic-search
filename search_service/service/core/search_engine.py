@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Union
 from search_service.service.core.scorer import HybridScorer
+from search_service.service.core.search_mode import SearchMode
 from search_service.text_processing.text_preparation import \
     transforms_embed, \
     transforms_llm, \
@@ -23,11 +24,7 @@ class SemanticSearchEngine:
         self.threshold = cfg["threshold"]
 
         # TODO Можно перенести в конфиг
-        self.SEARCH_MODES = {
-            "full": ["original", "summary", "comments"],
-            "base": ["original", "summary"],
-            "comments": ["comments"],
-        }
+        self.SEARCH_MODES = SearchMode.get_vector_names
 
     async def generate_result(self, calc_result: list[dict]) -> List[Dict]:
         """
@@ -79,7 +76,8 @@ class SemanticSearchEngine:
                     hits[pid] = {
                         "score": score,
                         "registry_date": point.payload.get("registry_date"),
-                        "text": point.payload.get("text")
+                        "text": point.payload.get("text"),
+                        "comments": point.payload.get("comments"),
                     }
 
         return hits
@@ -122,7 +120,7 @@ class SemanticSearchEngine:
             self,
             query: str,
             product: str,
-            search_mode: str,
+            search_mode: SearchMode,
             limit=5,
             alpha=0.5,
             exact=True,
@@ -153,7 +151,7 @@ class SemanticSearchEngine:
             vector_db_collection = self.container.vector_db.collection(product)
 
             # Получаем результаты по векторам в коллекции, в зависимости от режима
-            vector_names = self.SEARCH_MODES[search_mode]
+            vector_names = search_mode.get_vector_names()
 
             log.info(f"Search text - {query} in product collection - {product}, vector names - {vector_names}")
 
@@ -177,7 +175,8 @@ class SemanticSearchEngine:
             ranked = self.scorer(
                 hits=hits,
                 query_text=query,
-                alpha=alpha
+                search_mode=search_mode,
+                alpha=alpha,
             )
 
             log.info(f'Result searching: {ranked}')
