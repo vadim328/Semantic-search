@@ -29,12 +29,12 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """
-        Первичный запуск приложения:
-            - создаёт контейнер
-            - передаёт его searcher и updater
-            - запускает updater
-            - подключает маршруты
-            - поднимает web-интерфейс
+    Первичный запуск приложения:
+        - создаёт контейнер
+        - передаёт его searcher и updater
+        - запускает updater
+        - подключает маршруты
+        - поднимает web-интерфейс
     """
 
     Config()  # Считываем файл на старте
@@ -45,8 +45,9 @@ async def startup_event():
     searcher = SemanticSearchEngine(container)
     updater = DataUpdater(container)
 
-    # Запускаем обновления в фоне
-    asyncio.create_task(updater.run())
+    log.info("Launching app delayed by 20 seconds. Wait for required services raised")
+    await asyncio.sleep(20)  # Отложенный запус, дожидаемся пока поднимутся нужные сервисы
+    await updater.run()  # Ждем завершения проверки/получения данных
 
     routers = register_routes(
         searcher=searcher,
