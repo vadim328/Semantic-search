@@ -12,9 +12,8 @@ class HybridScorer:
     """Класс для вычисления гибридного результата поиска"""
     def __call__(
         self,
-        hits: dict,
+        hits: Dict,
         query_text: str,
-        *,
         alpha: float = 0.5
     ) -> List[Dict]:
         """
@@ -34,6 +33,8 @@ class HybridScorer:
         # --- cosine ---
         cosine_scores = np.array([h["score"] for h in hits.values()])
 
+        log.info(f"cosine_scores - {cosine_scores}")
+
         # --- BM25 ---
         tokenized_docs = [
             transforms_bm25(h["text"])["text"].split()
@@ -46,17 +47,16 @@ class HybridScorer:
         bm25 = BM25Okapi(tokenized_docs)
         bm25_scores = bm25.get_scores(tokenized_query)
 
-        # --- normalize ---
-        cosine_norm = cosine_scores / (cosine_scores.max() + 1e-9)
+        # Нормализация для BM25
         bm25_norm = bm25_scores / (bm25_scores.max() + 1e-9)
 
-        log.debug(f"Cosine score - {cosine_norm}, BM25 score - {bm25_norm}")
+        log.debug(f"Cosine score - {cosine_scores}, BM25 score - {bm25_norm}")
 
         # --- hybrid ---
         # Для поиска по ключевым словам лучше увеличить альфу
         hybrid_scores = (
             alpha * bm25_norm +
-            (1 - alpha) * cosine_norm
+            (1 - alpha) * cosine_scores
         )
 
         # --- pack ---
