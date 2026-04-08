@@ -45,8 +45,8 @@ async def startup_event():
     searcher = SemanticSearchEngine(container)
     updater = DataUpdater(container)
 
-    log.info("Launching app delayed by 20 seconds. Wait for required services raised")
-    await asyncio.sleep(20)  # Отложенный запус, дожидаемся пока поднимутся нужные сервисы
+    log.info("Launching app delayed by 10 seconds. Wait for required services raised")
+    await asyncio.sleep(10)  # Отложенный запус, дожидаемся пока поднимутся нужные сервисы
     await updater.run()  # Ждем завершения проверки/получения данных
 
     routers = register_routes(
