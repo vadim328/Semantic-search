@@ -16,7 +16,7 @@ class HybridScorer:
         hits: Dict,
         query_text: str,
         search_mode: SearchMode,
-        alpha: float = 0.5
+        alpha: float
     ) -> List[Dict]:
         """
         Args
@@ -32,7 +32,6 @@ class HybridScorer:
         if not hits:
             return []
 
-        # --- cosine ---
         cosine_scores = np.array([h["score"] for h in hits.values()])
 
         log.info(f"cosine_scores - {cosine_scores}")
