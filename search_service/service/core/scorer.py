@@ -37,6 +37,7 @@ class HybridScorer:
 
         log.info(f"cosine_scores - {cosine_scores}")
 
+        # Получаем текст проблемы в зависимости от режима поиска
         tokenized_docs = [
             transforms_bm25(search_mode.extract_text(h))["text"].split()
             for h in hits.values()

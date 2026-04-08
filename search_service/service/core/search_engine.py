@@ -23,7 +23,6 @@ class SemanticSearchEngine:
         self.scorer = HybridScorer()
         self.threshold = cfg["threshold"]
 
-        # TODO Можно перенести в конфиг
         self.SEARCH_MODES = SearchMode.get_vector_names
 
     async def generate_result(self, calc_result: list[dict]) -> List[Dict]:
