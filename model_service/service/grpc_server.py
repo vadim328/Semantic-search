@@ -28,7 +28,8 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
         """Инициализация моделей эмбеддингов и LLM."""
         self.embedding_model = EmbeddingModel(
             config.embedding["path"],
-            config.embedding["model_name"]
+            config.embedding["model_name"],
+            config.embedding["max_length"]
         )
 
         self.llm_model = LLMModel(

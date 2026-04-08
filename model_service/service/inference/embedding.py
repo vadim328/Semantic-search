@@ -14,13 +14,15 @@ class EmbeddingModel:
     """Инференс для Эмбеддинг моделей"""
     def __init__(self,
                  model_path: str,
-                 file_name=None
+                 file_name: str,
+                 max_length=512,
                  ):
         """
         Инициализация энкодера и токенайзера модели
         Args:
             model_path (str): Путь до модели
-            file_name (str | None): Название модели
+            file_name (str): Название модели
+            max_length (int): Максимальная длина входа модели в токенах
         """
 
         self.encoder = ORTModelForFeatureExtraction.from_pretrained(
@@ -29,7 +31,7 @@ class EmbeddingModel:
             )
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
-        self.max_length = 512
+        self.max_length = max_length
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
