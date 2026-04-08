@@ -160,7 +160,6 @@ class EmbeddingModel:
     def embed(
             self,
             texts: List[str],
-            prefix: str,
             batch_size=8,
     ) -> np.ndarray:
 
@@ -168,7 +167,6 @@ class EmbeddingModel:
         Получение эмбеддинга для текстов
         Args:
             texts (List): Список текстов
-            prefix (str): query/passage. query - для поиска passage - для сохранения в БД
             batch_size (int): Размер батча
         Returns:
             ndarray[list[Tensor]]: array полученных эмбеддингов
@@ -177,7 +175,6 @@ class EmbeddingModel:
         all_embeddings = []
 
         for text in texts:
-            text = f"{prefix}: {text}"
 
             # делим текст на чанки
             chunks = self.chunk_text(

@@ -81,7 +81,6 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
         """
         embeddings = self.embedding_model.embed(
             texts=list(request.texts),  # request.texts - объект protobuf, преобразовываем в список обратно
-            prefix=request.prefix,
         )
 
         response_embeddings = []
