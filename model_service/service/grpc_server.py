@@ -27,10 +27,10 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
     def __init__(self):
         """Инициализация моделей эмбеддингов и LLM."""
         self.embedding_model = EmbeddingModel(
-            config.embedding["path"],
-            config.embedding["model_name"],
-            config.embedding["max_length"],
-            config.embedding["batch_size"]
+            model_path=config.embedding["path"],
+            file_name=config.embedding["model_name"],
+            batch_size=config.embedding["batch_size"],
+            max_length=config.embedding["max_length"],
         )
 
         self.llm_model = LLMModel(
@@ -116,7 +116,7 @@ def serve():
     server.add_insecure_port("[::]:50051")
 
     server.start()
-    print("gRPC server started on 50051")
+    log.info("gRPC server started on 50051")
 
     server.wait_for_termination()
 

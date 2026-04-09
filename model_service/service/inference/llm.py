@@ -35,7 +35,8 @@ class LLMModel:
             model_path=model_path,
             n_ctx=n_ctx,
             n_threads=threads,
-            n_gpu_layers=0  # 0 если без GPU
+            n_gpu_layers=0,  # 0 если без GPU
+            verbose=False,
         )
 
         log.debug("LLM model loaded successfully")
