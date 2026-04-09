@@ -6,12 +6,28 @@ from natasha import Doc, Segmenter, NewsEmbedding, NewsMorphTagger, MorphVocab
 from sklearn.feature_extraction.text import TfidfVectorizer
 from typing import List
 
-nltk.download('stopwords')
+
+# Проверка и тихая загрузка ресурсов
+def ensure_nltk_resources():
+    resources = [
+        ("corpora/stopwords", "stopwords"),
+        ("tokenizers/punkt", "punkt"),
+        ("tokenizers/punkt_tab", "punkt_tab"),
+    ]
+    for path, name in resources:
+        try:
+            nltk.data.find(path)
+        except LookupError:
+            nltk.download(name, quiet=True)
+
+
+ensure_nltk_resources()
+
+# Стоп-слова
 sw = set(stopwords.words("russian"))
 sw.update(["добрый", "день", "вечер", "привет", "здравствуйте", "запрос", "оригинальный", "и", "в", "у", "с", "к"])
 keep_words = {"не"}
 sw = sw - keep_words
-nltk.download("punkt_tab")
 
 segmenter = Segmenter()
 emb = NewsEmbedding()
