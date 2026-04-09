@@ -29,7 +29,8 @@ class ModelService(model_pb2_grpc.ModelServiceServicer):
         self.embedding_model = EmbeddingModel(
             config.embedding["path"],
             config.embedding["model_name"],
-            config.embedding["max_length"]
+            config.embedding["max_length"],
+            config.embedding["batch_size"]
         )
 
         self.llm_model = LLMModel(

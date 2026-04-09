@@ -15,6 +15,7 @@ class EmbeddingModel:
     def __init__(self,
                  model_path: str,
                  file_name: str,
+                 batch_size: int,
                  max_length=512,
                  ):
         """
@@ -22,6 +23,7 @@ class EmbeddingModel:
         Args:
             model_path (str): Путь до модели
             file_name (str): Название модели
+            batch_size (int): Размер батча
             max_length (int): Максимальная длина входа модели в токенах
         """
 
@@ -40,6 +42,8 @@ class EmbeddingModel:
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         log.info(f"Using device: {self.device}")
+
+        self.batch_size = batch_size
 
     @staticmethod
     def mean_pooling(last_hidden_states: Tensor,
@@ -131,24 +135,22 @@ class EmbeddingModel:
     def _encode(
             self,
             chunks: List[str],
-            batch_size: int,
     ) -> Tensor:
         """
         Получение эмбеддинга для текстов
         Args:
             chunks (List[str]):
-            batch_size (int): Размер батча
         Returns:
             Tensor: Полученный эмбеддинг
         """
 
-        log.info(f"Encoding {len(chunks)} chunks (batch_size={batch_size})")
+        log.info(f"Encoding {len(chunks)} chunks (batch_size={self.batch_size})")
 
         all_embeddings = []
 
-        for i in range(0, len(chunks), batch_size):
-            batch_chunks = chunks[i:i + batch_size]
-            log.debug(f"Processing batch {i // batch_size + 1} with size {len(batch_chunks)}")
+        for i in range(0, len(chunks), self.batch_size):
+            batch_chunks = chunks[i:i + self.batch_size]
+            log.debug(f"Processing batch {i // self.batch_size + 1} with size {len(batch_chunks)}")
 
             batch = self.tokenizer(
                 batch_chunks,
@@ -179,15 +181,13 @@ class EmbeddingModel:
 
     def embed(
             self,
-            texts: List[str],
-            batch_size=8,
+            texts: List[str]
     ) -> np.ndarray:
 
         """
         Получение эмбеддинга для текстов
         Args:
             texts (List): Список текстов
-            batch_size (int): Размер батча
         Returns:
             ndarray[list[Tensor]]: array полученных эмбеддингов
         """
@@ -204,7 +204,7 @@ class EmbeddingModel:
             log.debug(f"Number of chunks: {len(chunks)}")
 
             # получаем эмбеддинги чанков
-            chunk_embeddings = self._encode(chunks, batch_size)
+            chunk_embeddings = self._encode(chunks)
 
             # weighted pooling
             weights = self.weighted_pooling(
