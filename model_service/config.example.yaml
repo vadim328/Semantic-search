@@ -1,11 +1,20 @@
 service:
-  logging_level:                # Уровень логирование
+  max_workers:                      # Количество воркеров
+  logging_level:                    # Уровень логирование
 
 llm:
-  path:                         # Путь до LLM модели
-  n_threads:                    # Количество потоков для работы модели
-  n_ctx:                        # Длина контекста
+  path:                             # Путь до LLM модели
+  n_threads:                        # Количество потоков для работы модели
+  n_ctx: 32768                      # Длина контекста
+  generate:                         # Параметры генерации
+    max_tokens: 512
+    temperature: 0.0
+    top_p: 1.0
+    top_k: 1
+    repeat_penalty: 1.05
 
 embedding:
-  path:                         # Путь до Embedding модели
-  model_name:                   # Название модели
+  path:                             # Путь до Embedding модели
+  model_name:                       # Название модели
+  max_length:                       # Максимальная длина токенов (зависит от модели и ОЗУ)
+  batch_size:                       # Размер батча для обработки текстов

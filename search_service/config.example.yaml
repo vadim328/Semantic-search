@@ -1,10 +1,18 @@
+service:
+  logging_level:                # Уровень логирвоание сервиса
+  products: []                  # Список продуктов
+  searcher:
+    threshold:                  # Уровень ниже которого не будем учитывать результаты
+  updater:
+    max_concurrent:             # Количество потоков для одновременной обработки строк (зависит от ресурсов сервера и воркеров сервиса моделей)
+
 database:
   relational_db:
-    url: ""
+    url: ""                     # URL реляционной БД
   vector_db:
-    url: ""
-    date_from: ""
-    vector_params:
+    url: ""                     # URL векторной БД
+    date_from: ""               # Дата начиная с которой требуется получать запросы
+    vector_params:              # Параметры векторов, название и размер вектора (размер зависит от Embedding модели)
       - name: ""
         size:
       - name: ""
@@ -19,17 +27,12 @@ database:
       on_disk:                  # где хранить граф
 
 model:
-  url: ""                       # URL сервиса с моделями
+  url:                          # URL сервиса с моделями
   chunking:
-    max_content_tokens: int
-    generation_tokens: int
-    token_safety_ratio: float
-    chars_per_token: int
-
-service:
-  logging_level: "INFO"
-  products: []
-  searcher:
-    threshold:
-  updater:
-    max_concurrent:
+    max_content_tokens:         # Максимальный размер чанка в токенах
+    generation_tokens:          # Длина ответа LLM модели в токенах
+    token_safety_ratio:         # Доля от максимального размера чанка, чтоб не выходить за пределы max_content_tokens (0.8)
+    chars_per_token:            # Примерное количество символов в токене (2-4)
+  timeouts:
+    timeout_generate:           # Таймаут ожидания результата от LLM
+    timeout_embed:              # Таймаут ожидания результата от Embedding
