@@ -21,7 +21,11 @@ class Container:
     def __init__(self):
         # Cинхронная инициализация (без I/O)
         log.info("Init model service client")
-        self.model_client = ModelServiceClient(cfg.model["url"])
+        self.model_client = ModelServiceClient(
+            cfg.model["url"],
+            cfg.model["timeouts"]["timeout_generate"],
+            cfg.model["timeouts"]["timeout_embed"]
+        )
 
         self.summarization_orchestrator = SummarizationOrchestrator(
             self.model_client

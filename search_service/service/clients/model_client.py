@@ -39,9 +39,16 @@ class ModelServiceClient:
     """
     Клиент для взаимодействия с сервисом моделей
     """
-    def __init__(self, url: str):
+    def __init__(self,
+                 url: str,
+                 timeout_generate=90,
+                 timeout_embed=90
+                 ):
         self._channel = grpc.aio.insecure_channel(url)
         self.stub = model_pb2_grpc.ModelServiceStub(self._channel)
+
+        self.timeout_generate = timeout_generate
+        self.timeout_embed = timeout_embed
 
     async def __aenter__(self):
         return self
@@ -71,7 +78,7 @@ class ModelServiceClient:
                 prompt=prompt,
                 max_tokens=settings.generation_tokens,
             ),
-            timeout=180.0,
+            timeout=self.timeout_generate,
         )
         return response.text
 
@@ -102,7 +109,7 @@ class ModelServiceClient:
                 texts=texts,
                 prefix=prefix,
             ),
-            timeout=300.0,
+            timeout=self.timeout_embed,
         )
 
         if not response.embeddings:
