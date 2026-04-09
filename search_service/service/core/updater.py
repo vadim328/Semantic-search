@@ -40,9 +40,6 @@ class DataUpdater:
             log.exception("Initial update failed")
             raise
 
-        # Дальше — по расписанию
-        await self.background_updater()
-
     @staticmethod
     def _build_intervals(start_interval: datetime) -> List:
         """

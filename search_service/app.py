@@ -49,6 +49,9 @@ async def startup_event():
     await asyncio.sleep(10)  # Отложенный запус, дожидаемся пока поднимутся нужные сервисы
     await updater.run()  # Ждем завершения проверки/получения данных
 
+    # Запускаем фоновое обновление
+    asyncio.create_task(updater.background_updater())
+
     routers = register_routes(
         searcher=searcher,
         container=container

@@ -50,7 +50,7 @@ class ModelServiceClient:
         await self._channel.close()
 
     @retry(
-        stop=stop_after_attempt(5),
+        stop=stop_after_attempt(3),
         wait=wait_random_exponential(multiplier=1, max=10),
         retry=retry_if_exception(is_retryable_grpc_error),
         before_sleep=before_sleep_log(log, logging.WARNING),
@@ -71,12 +71,12 @@ class ModelServiceClient:
                 prompt=prompt,
                 max_tokens=settings.generation_tokens,
             ),
-            timeout=90.0,
+            timeout=180.0,
         )
         return response.text
 
     @retry(
-        stop=stop_after_attempt(5),
+        stop=stop_after_attempt(3),
         wait=wait_random_exponential(multiplier=1, max=10),
         retry=retry_if_exception(is_retryable_grpc_error),
         before_sleep=before_sleep_log(log, logging.WARNING),
@@ -102,7 +102,7 @@ class ModelServiceClient:
                 texts=texts,
                 prefix=prefix,
             ),
-            timeout=90.0,
+            timeout=300.0,
         )
 
         if not response.embeddings:
