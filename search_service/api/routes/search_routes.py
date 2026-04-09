@@ -80,10 +80,10 @@ def create_search_routes(searcher: SemanticSearchEngine) -> APIRouter:
             query,
             product,
             SearchMode(search_mode),
-            limit,
-            alpha,
-            exact,
-            filters
+            limit=limit,
+            alpha=alpha,
+            exact=exact,
+            filters=filters,
         )
         log.info(f"Result search request : {result}")
 

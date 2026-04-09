@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Union, Optional
 from search_service.service.core.scorer import HybridScorer
 from search_service.service.core.search_mode import SearchMode
 from search_service.text_processing.text_preparation import \
@@ -120,10 +120,11 @@ class SemanticSearchEngine:
             query: str,
             product: str,
             search_mode: SearchMode,
-            limit=5,
-            alpha=0.5,
-            exact=True,
-            filters=None
+            *,
+            limit: int = 5,
+            alpha: float = 0.5,
+            exact: bool = True,
+            filters: Optional[Dict[str, Any]] = None
     ) -> Union[Dict, List[Dict]]:
         """
         Поиск информации в векторной БД по введенному тексту
