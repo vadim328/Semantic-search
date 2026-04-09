@@ -25,15 +25,21 @@ class EmbeddingModel:
             max_length (int): Максимальная длина входа модели в токенах
         """
 
+        log.info(f"Initializing EmbeddingModel: model_path={model_path}, file_name={file_name}")
+
         self.encoder = ORTModelForFeatureExtraction.from_pretrained(
             model_path,
             file_name=file_name
             )
+        log.debug("Encoder model loaded successfully")
+
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        log.debug("Tokenizer loaded successfully")
 
         self.max_length = max_length
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        log.info(f"Using device: {self.device}")
 
     @staticmethod
     def mean_pooling(last_hidden_states: Tensor,
@@ -54,6 +60,8 @@ class EmbeddingModel:
             weights (Tensor): Веса чанков
         """
 
+        log.debug(f"Computing weights for {len(chunks)} chunks")
+
         lengths = []
         for chunk in chunks:
             tokens = self.tokenizer(
@@ -62,14 +70,15 @@ class EmbeddingModel:
             )["input_ids"]
             lengths.append(len(tokens))
 
-        lengths = torch.tensor(
-            lengths,
-            device=device,
-            dtype=torch.float32
-        )
+        lengths = torch.tensor(lengths, device=device, dtype=torch.float32)
+
+        if lengths.sum() == 0:
+            log.warning("Sum of chunk lengths is zero — possible issue with input data")
 
         # нормализуем веса
         weights = lengths / (lengths.sum() + 1e-8)
+
+        log.debug(f"Chunk weights: {weights.tolist()}")
 
         return weights
 
@@ -87,6 +96,8 @@ class EmbeddingModel:
             chunks (List[str]): Чанки текста
         """
 
+        log.debug(f"Chunking text with length {len(text)} characters")
+
         tokens = self.tokenizer(
             text,
             add_special_tokens=False,
@@ -97,6 +108,7 @@ class EmbeddingModel:
         chunks = []
 
         if len(tokens) <= self.max_length:
+            log.debug("Text fits into a single chunk")
             return [text]
 
         start = 0
@@ -111,6 +123,8 @@ class EmbeddingModel:
             )
             chunks.append(chunk_text)
             start += self.max_length - overlap
+
+        log.info(f"Text split into {len(chunks)} chunks")
 
         return chunks
 
@@ -128,10 +142,13 @@ class EmbeddingModel:
             Tensor: Полученный эмбеддинг
         """
 
+        log.info(f"Encoding {len(chunks)} chunks (batch_size={batch_size})")
+
         all_embeddings = []
 
         for i in range(0, len(chunks), batch_size):
             batch_chunks = chunks[i:i + batch_size]
+            log.debug(f"Processing batch {i // batch_size + 1} with size {len(batch_chunks)}")
 
             batch = self.tokenizer(
                 batch_chunks,
@@ -155,7 +172,10 @@ class EmbeddingModel:
 
                 all_embeddings.append(embeddings)
 
-        return torch.cat(all_embeddings, dim=0)
+        result = torch.cat(all_embeddings, dim=0)
+        log.info(f"Encoding complete. Output shape: {result.shape}")
+
+        return result
 
     def embed(
             self,
@@ -172,14 +192,16 @@ class EmbeddingModel:
             ndarray[list[Tensor]]: array полученных эмбеддингов
         """
 
+        log.info(f"Starting embedding for {len(texts)} texts")
+
         all_embeddings = []
 
-        for text in texts:
+        for idx, text in enumerate(texts):
+            log.debug(f"Processing text {idx + 1}/{len(texts)}")
 
             # делим текст на чанки
-            chunks = self.chunk_text(
-                text,
-            )
+            chunks = self.chunk_text(text)
+            log.debug(f"Number of chunks: {len(chunks)}")
 
             # получаем эмбеддинги чанков
             chunk_embeddings = self._encode(chunks, batch_size)
@@ -196,4 +218,8 @@ class EmbeddingModel:
 
             all_embeddings.append(final_embedding)
 
-        return np.vstack([emb.cpu().numpy() for emb in all_embeddings])
+        result: np.ndarray = np.vstack([emb.cpu().numpy() for emb in all_embeddings])
+
+        log.info(f"Embedding complete. Final shape: {result.shape}")
+
+        return result
