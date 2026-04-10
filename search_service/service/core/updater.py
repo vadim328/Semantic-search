@@ -21,6 +21,7 @@ class DataUpdater:
 
         self.container = container
         self.max_concurrent = cfg["max_concurrent"]
+        self.time_window = cfg["time_window"] * 86_400
 
         # Берем последнюю запись среди всех коллекций
         self.date_from = datetime.fromtimestamp(
@@ -40,8 +41,7 @@ class DataUpdater:
             log.exception("Initial update failed")
             raise
 
-    @staticmethod
-    def _build_intervals(start_interval: datetime) -> List:
+    def _build_intervals(self, start_interval: datetime) -> List:
         """
         Вычисление временных интервалов для их использования в запросах на получение данных
             Конец последнего интервала - текущая дата и время
@@ -56,7 +56,7 @@ class DataUpdater:
         start_interval = start_interval.timestamp()
         end_interval = datetime.now().timestamp()
         while True:
-            batch_end = start_interval + 2592000  # Берем месяц
+            batch_end = start_interval + self.time_window
             if batch_end >= end_interval:
                 intervals.append(
                     {
@@ -99,30 +99,44 @@ class DataUpdater:
         Returns:
             dict - эмбеддинги запроса
         """
+        vectors = {}
 
-        vectors = {"original": await self.container.model_client.embed(
-            texts=transforms_embed(text=row["problem"])["text"],
-            prefix="passage",
-        )}
+        try:
+            vectors["original"] = await self.container.model_client.embed(
+                texts=transforms_embed(text=row["problem"])["text"],
+                prefix="passage",
+            )
+        except Exception as e:
+            log.exception(f"Embedding failed for original text: {e}")
 
         if row["comments"]:
             comments = transforms_comments(text=row["comments"])["text"]
-            vectors["comments"] = await self.container.model_client.embed(
-                texts=comments,
-                prefix="passage",
-            )
+            comments = transforms_embed(text=comments)["text"],
+            try:
+                vectors["comments"] = await self.container.model_client.embed(
+                    texts=comments,
+                    prefix="passage",
+                )
+            except Exception as e:
+                log.exception(f"Embedding failed for comments: {e}")
         else:
             comments = None
 
-        problem_summary = await self.container.summarization_orchestrator.summarize(
-            problem=transforms_llm(text=row["problem"])["text"],
-            comments=comments,
-            max_concurrent=self.max_concurrent,
-        )
-        vectors["summary"] = await self.container.model_client.embed(
-            texts=problem_summary,
-            prefix="passage",
-        )
+        try:
+            problem_summary = await self.container.summarization_orchestrator.summarize(
+                problem=transforms_llm(text=row["problem"])["text"],
+                comments=comments,
+                max_concurrent=self.max_concurrent,
+            )
+            vectors["summary"] = await self.container.model_client.embed(
+                texts=problem_summary,
+                prefix="passage",
+            )
+        except Exception as e:
+            log.exception(f"Embedding failed for comments: {e}")
+
+        if not vectors:
+            raise ValueError("Failed to get any embedding")
 
         return vectors
 
