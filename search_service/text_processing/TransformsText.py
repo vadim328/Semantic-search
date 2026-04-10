@@ -29,6 +29,49 @@ sw.update(["добрый", "день", "вечер", "привет", "здрав
 keep_words = {"не"}
 sw = sw - keep_words
 
+transcript = [
+    # Erudite
+    (r'erudite', 'эрудит'),
+    (r'levitan', 'левитан'),
+    (r'threducon', 'тредукон'),
+    (r'reporter', 'репортер'),
+    (r'naumen speech ai', 'наумен спич'),
+    (r'consul', 'консул'),
+    (r'patroni', 'патрони'),
+    (r'postgres', 'постгрес'),
+    (r'grafana', 'графана'),
+    (r'amd', 'амд'),
+    (r'asr', 'распознавание'),
+    (r'tts', 'синтез'),
+    (r'crt', 'црт'),
+    (r'erudite-web', 'эрудит-веб'),
+    (r'erudite-python', 'эрудит-пайтон'),
+    (r'levitan-python', 'левитан-пайтон'),
+    (r'docker', 'докер'),
+    (r'kubernetes', 'кубер'),
+    (r'kerberos', 'керберос'),
+
+    # NCC
+    (r'ncc', 'нцц'),
+    (r'pms', 'пмс'),
+    (r'naumen contact center', 'нцц'),
+    (r'dialer', 'диалер'),
+    (r'buddy', 'бадди'),
+    (r'naucore', 'наукор'),
+    (r'naumuddy', 'бадди'),
+    (r'naumb', 'мб'),
+    (r'naucore', 'наукор'),
+    (r'snitch', 'снитч'),
+    (r'balancer', 'балансер'),
+    (r'ncc chat', 'нцц чат'),
+    (r'tel', 'тел'),
+    (r'nautel', 'тел'),
+
+    # Общие
+    (r'rest api', 'рест апи'),
+    (r'api', 'апи'),
+]
+
 segmenter = Segmenter()
 emb = NewsEmbedding()
 morph_tagger = NewsMorphTagger(emb)
@@ -198,53 +241,62 @@ class MapBlocks:
 
 
 class RemoveLogs:
-    def __init__(self):
-        self.log_line_patterns = [
-            re.compile(p) for p in [
-                r'\.java:\d+',
-                r'\.py", line \d+',
-                r'Traceback',
-                r'\bat\s+.*\(.+:\d+:\d+\)',
-                r'^\s*at\s+',
-                r'Exception',
-                r'Error',
-            ]
+    def __init__(self, min_seq_len: int = 10):
+        self.min_seq_len = min_seq_len
+
+    @staticmethod
+    def is_log_token(token: str) -> bool:
+
+        # есть латиница
+        if re.search(r'[a-zA-Z]', token):
+            return True
+
+        # сильные признаки логов
+        log_signs = [
+            ':', '(', ')', '[', ']', '::'
         ]
 
-        self.inline_patterns = [
-            re.compile(p) for p in [
-                r'\b[\w.$]+\([\w.$]+\.java:\d+\)',
-                r'\S+\.(java|py|js|ts|go|cpp):\d+',
-            ]
-        ]
+        if any(s in token for s in log_signs):
+            return True
 
-        self.exception_pattern = re.compile(
-            r'"exception"\s*:\s*"\[.*?\]"', re.S
-        )
+        # версии / системные строки
+        if re.search(r'\d+\.\d+', token):
+            return True
 
-    def is_log_line(self, line: str) -> bool:
-        return any(p.search(line) for p in self.log_line_patterns)
+        # чисто короткие тех слова
+        if re.fullmatch(r'[a-zA-Z0-9_-]+', token):
+            return True
+
+        return False
 
     def __call__(self, text: str):
-        # 1. убираем exception блоки
-        text = self.exception_pattern.sub(' ', text)
+        tokens = re.findall(r'\S+', text)
 
-        # 2. разбиваем на строки
-        lines = re.split(r'[\n\r]+', text)
+        result = []
+        buffer = []
 
-        # 3. фильтруем строки
-        lines = [l for l in lines if not self.is_log_line(l)]
+        def flush():
+            nonlocal buffer
 
-        text = " ".join(lines)
+            if not buffer:
+                return
 
-        # 4. inline очистка
-        for p in self.inline_patterns:
-            text = p.sub(' ', text)
+            # удаляем если длинная последовательность
+            if len(buffer) < self.min_seq_len:
+                result.extend(buffer)
 
-        # 5. убираем JSON шум
-        text = re.sub(r'[{}\[\]"]', ' ', text)
+            buffer = []
 
-        # 6. нормализация
-        text = re.sub(r'\s+', ' ', text).strip()
+        for token in tokens:
+            if self.is_log_token(token):
+                buffer.append(token)
+            else:
+                flush()
+                result.append(token)
 
-        return {"text": text}
+        flush()
+
+        cleaned = ' '.join(result)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+
+        return {"text": cleaned}

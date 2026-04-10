@@ -1,6 +1,4 @@
 from search_service.text_processing import TransformsText as TT
-import re
-from typing import List
 
 
 transforms_bm25 = TT.TextCompose([
@@ -17,8 +15,8 @@ transforms_bm25 = TT.TextCompose([
         replace_with_number='',
         replace_with_currency_symbol=''
     ),
+    TT.ReplaceText(TT.transcript),
     TT.ReplaceText([
-                    (r'erudite', 'система'),
                     (r'[^а-яА-Яa-zA-Z0-9\s\-]', ''),
     ]),
     TT.TextLemmatization(),
@@ -44,9 +42,8 @@ transforms_embed = TT.TextCompose([
         replace_with_number='',
         replace_with_currency_symbol=''
     ),
-    TT.ReplaceText([
-                    (r'erudite', 'система'),
-    ]),
+    TT.RemoveLogs(),
+    TT.ReplaceText(TT.transcript),
     # Убираем длинные слова, на английском, которые слиплись
     TT.ReplaceText([
                     (r'\b[A-Za-z]{8,}\b', ''),
@@ -80,6 +77,7 @@ comment_block_cleaner = TT.TextCompose([
         (r'необходимо классифицировать запрос', ''),
         (r'категория назначена', ''),
     ]),
+    TT.RemoveLogs(),
     TT.NormalizeWhitespace(),
 ])
 
