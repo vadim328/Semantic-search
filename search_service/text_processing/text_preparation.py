@@ -76,6 +76,7 @@ comment_block_cleaner = TT.TextCompose([
         (r'данный запрос находится в состоянии.*', ''),
         (r'необходимо классифицировать запрос', ''),
         (r'категория назначена', ''),
+        (r'&nbsp', ''),
     ]),
     TT.RemoveLogs(),
     TT.NormalizeWhitespace(),

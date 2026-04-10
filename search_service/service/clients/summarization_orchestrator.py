@@ -109,7 +109,7 @@ class SummarizationOrchestrator:
         if len(prompts) == 1:
             return await self._generate(prompts[0])
 
-        log.info("Using chunked summarization")
+        log.info(f"Using chunked summarization, count chunks - {len(prompts)}")
 
         summaries = await self._map_phase(prompts, max_concurrent)
 

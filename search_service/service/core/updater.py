@@ -97,7 +97,7 @@ class DataUpdater:
         Args:
             row (dict): запись с полями
         Returns:
-            dict - эмбеддинги запроса
+            dict: эмбеддинги запроса
         """
         vectors = {}
 
@@ -111,7 +111,6 @@ class DataUpdater:
 
         if row["comments"]:
             comments = transforms_comments(text=row["comments"])["text"]
-            comments = transforms_embed(text=comments)["text"],
             try:
                 vectors["comments"] = await self.container.model_client.embed(
                     texts=comments,
