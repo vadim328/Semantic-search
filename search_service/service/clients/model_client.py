@@ -56,13 +56,24 @@ class ModelServiceClient:
     async def __aexit__(self, exc_type, exc, tb):
         await self._channel.close()
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_random_exponential(multiplier=1, max=10),
-        retry=retry_if_exception(is_retryable_grpc_error),
-        before_sleep=before_sleep_log(log, logging.WARNING),
-        reraise=True,
-    )
+    @staticmethod
+    def grpc_retry(*, multiplier=10, min_wait=10, max_wait=60, attempts=4):
+        def decorator(func):
+            return retry(
+                stop=stop_after_attempt(attempts),
+                wait=wait_random_exponential(
+                    multiplier=multiplier,
+                    min=min_wait,
+                    max=max_wait,
+                ),
+                retry=retry_if_exception(is_retryable_grpc_error),
+                before_sleep=before_sleep_log(log, logging.WARNING),       # type: ignore
+                reraise=True,
+            )(func)
+
+        return decorator
+
+    @grpc_retry()
     async def generate(self, prompt: str) -> str:
         """
         Выполняет gRPC запрос к LLM модели
@@ -74,7 +85,7 @@ class ModelServiceClient:
         log.debug(f"Prompt for summarization:\n{prompt}")
 
         response = await self.stub.Generate(
-            model_pb2.GenerateRequest(
+            model_pb2.GenerateRequest(                                     # type: ignore
                 prompt=prompt,
                 max_tokens=settings.generation_tokens,
             ),
@@ -82,13 +93,7 @@ class ModelServiceClient:
         )
         return response.text
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_random_exponential(multiplier=1, max=10),
-        retry=retry_if_exception(is_retryable_grpc_error),
-        before_sleep=before_sleep_log(log, logging.WARNING),
-        reraise=True,
-    )
+    @grpc_retry()
     async def embed(
             self,
             texts: Union[str, List[str]],
@@ -105,7 +110,7 @@ class ModelServiceClient:
             texts = [texts]
 
         response = await self.stub.Embed(
-            model_pb2.EmbeddingRequest(
+            model_pb2.EmbeddingRequest(                                    # type: ignore
                 texts=texts,
                 prefix=prefix,
             ),
