@@ -12,6 +12,7 @@ from search_service.db.vector_db.filters import _build_filter
 from search_service.db.vector_db.metadata import CollectionMetadata
 from dataclasses import asdict
 from datetime import datetime
+from search_service.infrastructure.retry.qdrant import qdrant_retry
 import logging
 
 log = logging.getLogger(__name__)
@@ -172,6 +173,18 @@ class CollectionStore:
 
         self._metadata.points_count += len(points)
 
+    @qdrant_retry()
+    async def _upsert_with_retry(self, points: List[PointStruct]):
+        """
+        Отдельный метод для сохранения точек с retry-декоратором
+        Args:
+            points [List[PointStruct]]: точки для сохранения
+        """
+        await self._client.upsert(
+            collection_name=self._collection,
+            points=points
+        )
+
     async def save_embeddings(self, points: List[PointStruct]):
         """
         Сохранение точек в коллекцию
@@ -181,17 +194,21 @@ class CollectionStore:
         log.info(f"Saving {len(points)} points to collection - '{self._collection}'")
 
         try:
-            await self._client.upsert(
-                collection_name=self._collection,
-                points=points
+            await self._upsert_with_retry(points)
+        except Exception:
+            log.exception(
+                f"Final failure after retries saving points "
+                f"to collection '{self._collection}'"
             )
+            raise
 
+        try:
             self._update_metadata_fast(points)
-
-            log.info(f"Points successfully saved to collection - '{self._collection}'")
-
         except Exception as e:
-            log.error(f"Points unsuccessfully saved to collection - '{self._collection}'. Error - {e}")
+            log.error(f"Metadata update failed: {repr(e)}")
+            log.warning("Metadata is out of sync with Qdrant")
+
+        log.info(f"Points successfully saved to collection - '{self._collection}'")
 
     async def fetch_embeddings(
         self,

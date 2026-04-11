@@ -1,15 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-import logging
 import asyncio
 
-from search_service.service.config.logging_config import setup_logging
 from search_service.service.core.search_engine import SemanticSearchEngine
 from search_service.service.core.updater import DataUpdater
-from search_service.service.config.di import init_container
+from search_service.container.di import init_container
 from search_service.api.routes import register_routes
+from search_service.infrastructure.logging.config import setup_logging
 from search_service.config import Config
+
+import logging
 
 setup_logging()
 log = logging.getLogger(__name__)
@@ -47,7 +48,13 @@ async def startup_event():
 
     log.info("Launching app delayed by 10 seconds. Wait for required services raised")
     await asyncio.sleep(10)  # Отложенный запус, дожидаемся пока поднимутся нужные сервисы
-    await updater.run()  # Ждем завершения проверки/получения данных
+
+    try:
+        await updater.run()  # Ждем завершения проверки/получения данных
+    except Exception:
+        # Если не удалось выполнить инициализацию/получение данных, завершаемся
+        log.exception("Fatal: updater initial run failed. Shutting down application.")
+        raise SystemExit(1)
 
     # Запускаем фоновое обновление
     asyncio.create_task(updater.background_updater())

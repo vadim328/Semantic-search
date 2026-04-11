@@ -6,7 +6,10 @@ from search_service.db.vector_db.collection import CollectionStore
 class VectorDB:
 
     def __init__(self, url: str):
-        self.client = AsyncQdrantClient(url)
+        self.client = AsyncQdrantClient(
+            url,
+            timeout=120,
+        )
         self._collections = {}
 
     async def make_collection(

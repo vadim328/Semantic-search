@@ -1,38 +1,14 @@
-import grpc.aio
-import numpy as np
-import logging
-
 from typing import List, Union
 
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_random_exponential,
-    retry_if_exception,
-    before_sleep_log,
-)
+import grpc.aio
+import numpy as np
 
 from contracts.generated import model_pb2, model_pb2_grpc
 from search_service.service.clients.llm_settings import LLMSettings as settings
+from search_service.infrastructure.retry.grpc import grpc_retry
+import logging
 
 log = logging.getLogger(__name__)
-
-
-def is_retryable_grpc_error(exception):
-
-    import grpc
-
-    if isinstance(exception, grpc.aio.AioRpcError):
-        return exception.code() in {
-            grpc.StatusCode.UNAVAILABLE,
-            grpc.StatusCode.DEADLINE_EXCEEDED,
-            grpc.StatusCode.RESOURCE_EXHAUSTED,
-        }
-
-    if isinstance(exception, (ConnectionRefusedError, OSError)):
-        return True
-
-    return False
 
 
 class ModelServiceClient:
@@ -55,23 +31,6 @@ class ModelServiceClient:
 
     async def __aexit__(self, exc_type, exc, tb):
         await self._channel.close()
-
-    @staticmethod
-    def grpc_retry(*, multiplier=10, min_wait=10, max_wait=60, attempts=4):
-        def decorator(func):
-            return retry(
-                stop=stop_after_attempt(attempts),
-                wait=wait_random_exponential(
-                    multiplier=multiplier,
-                    min=min_wait,
-                    max=max_wait,
-                ),
-                retry=retry_if_exception(is_retryable_grpc_error),
-                before_sleep=before_sleep_log(log, logging.WARNING),       # type: ignore
-                reraise=True,
-            )(func)
-
-        return decorator
 
     @grpc_retry()
     async def generate(self, prompt: str) -> str:

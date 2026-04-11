@@ -1,6 +1,6 @@
 # service/updater.py
-import asyncio
 from typing import List, Dict
+import asyncio
 from search_service.text_processing.text_preparation import \
     transforms_embed, \
     transforms_llm, \
@@ -38,7 +38,6 @@ class DataUpdater:
             await self.update()
             log.info("Initial update finished")
         except Exception:
-            log.exception("Initial update failed")
             raise
 
     def _build_intervals(self, start_interval: datetime) -> List:
