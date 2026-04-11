@@ -32,6 +32,7 @@ async def lifespan(app: FastAPI):
     app.state.ready = False                # type: ignore
     log.info("System initializing...")
 
+    # Откладываем запуск на 10 секунд, пока нужные сервисы не поднимутся
     await asyncio.sleep(10)
 
     try:

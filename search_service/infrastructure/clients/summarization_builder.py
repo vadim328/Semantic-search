@@ -1,5 +1,5 @@
 from typing import List, Generator
-from search_service.service.clients.llm_settings import LLMSettings as settings
+from search_service.infrastructure.clients.llm_settings import LLMSettings as settings
 
 
 def split_text_into_chunks(

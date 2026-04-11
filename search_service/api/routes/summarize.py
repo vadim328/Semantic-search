@@ -1,7 +1,7 @@
 # api/routes/summarize.py
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
-from search_service.service.clients.summarization_orchestrator import SummarizationOrchestrator
+from search_service.infrastructure.clients.summarization_orchestrator import SummarizationOrchestrator
 from search_service.text_processing.text_preparation import transforms_llm, transforms_comments
 from search_service.api.schemas.summarization import SummarizeRequest
 from search_service.api.deps.orchestrator import get_orchestrator

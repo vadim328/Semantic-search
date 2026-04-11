@@ -1,10 +1,10 @@
 import asyncio
 import logging
 
-from search_service.db.relational_db.relational_db import RelationalDatabaseTouch
-from search_service.db.vector_db.client import VectorDB
-from search_service.service.clients.model_client import ModelServiceClient
-from search_service.service.clients.summarization_orchestrator import SummarizationOrchestrator
+from search_service.infrastructure.db.relational_db.relational_db import RelationalDatabaseTouch
+from search_service.infrastructure.db.vector_db.client import VectorDB
+from search_service.infrastructure.clients.model_client import ModelServiceClient
+from search_service.infrastructure.clients.summarization_orchestrator import SummarizationOrchestrator
 from search_service.config import Config
 
 log = logging.getLogger(__name__)

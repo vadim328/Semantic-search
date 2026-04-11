@@ -1,4 +1,5 @@
 from typing import List, Dict
+from pathlib import Path
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
@@ -12,7 +13,10 @@ class RelationalDatabaseTouch:
     def __init__(self, url):
         engine = create_async_engine(url)
         self.Session = async_sessionmaker(bind=engine)
-        self.request_data_query = text(load_file("search_service/db/relational_db/queries/fetch_data_request.sql"))
+        self.quires_dir = Path(__file__).parent / "queries"
+        self.request_data_query = text(
+            load_file(self.quires_dir / "fetch_data_request.sql")
+        )
         self.requests = []
 
     @retry(
@@ -50,7 +54,7 @@ class RelationalDatabaseTouch:
         Args:
             params (dict): Параметры запроса
         """
-        query = text(load_file("search_service/db/relational_db/queries/test.sql"))
+        query = text(load_file(self.quires_dir / "test.sql"))
         self.requests.extend(await self.make_request(query, params))
         log.info(f"Data received from relational db, count rows - {len(self.requests)}")
 
@@ -62,7 +66,7 @@ class RelationalDatabaseTouch:
         Returns:
             additional_data (List[dict]): Результат запроса
         """
-        query = text(load_file("search_service/db/relational_db/queries/additional_data.sql"))
+        query = text(load_file(self.quires_dir / "additional_data.sql"))
         additional_data = await self.make_request(query, params)
         log.info(f"Additional data received from relational db: {additional_data}")
         return additional_data

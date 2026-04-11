@@ -1,5 +1,5 @@
 from fastapi import Request
-from search_service.service.clients.summarization_orchestrator import SummarizationOrchestrator
+from search_service.infrastructure.clients.summarization_orchestrator import SummarizationOrchestrator
 
 
 def get_orchestrator(request: Request) -> SummarizationOrchestrator:

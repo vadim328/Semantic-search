@@ -4,7 +4,7 @@ import grpc.aio
 import numpy as np
 
 from contracts.generated import model_pb2, model_pb2_grpc
-from search_service.service.clients.llm_settings import LLMSettings as settings
+from search_service.infrastructure.clients.llm_settings import LLMSettings as settings
 from search_service.infrastructure.retry.grpc import grpc_retry
 import logging
 

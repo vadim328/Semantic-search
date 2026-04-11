@@ -1,8 +1,9 @@
+from pathlib import Path
 from datetime import datetime
 
 
 # Читаем файл
-def load_file(path: str) -> str:
+def load_file(path: str | Path) -> str:
     """
     Чтение файла
     Args:

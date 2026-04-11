@@ -8,8 +8,8 @@ from qdrant_client.models import (
     QueryResponse
 )
 from qdrant_client import AsyncQdrantClient
-from search_service.db.vector_db.filters import _build_filter
-from search_service.db.vector_db.metadata import CollectionMetadata
+from search_service.infrastructure.db.vector_db.filters import _build_filter
+from search_service.infrastructure.db.vector_db.metadata import CollectionMetadata
 from dataclasses import asdict
 from datetime import datetime
 from search_service.infrastructure.retry.qdrant import qdrant_retry

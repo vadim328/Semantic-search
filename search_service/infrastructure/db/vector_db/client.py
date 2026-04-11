@@ -1,6 +1,6 @@
 from typing import List, Dict
 from qdrant_client import AsyncQdrantClient
-from search_service.db.vector_db.collection import CollectionStore
+from search_service.infrastructure.db.vector_db.collection import CollectionStore
 
 
 class VectorDB:
