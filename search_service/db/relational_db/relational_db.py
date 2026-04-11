@@ -50,7 +50,7 @@ class RelationalDatabaseTouch:
         Args:
             params (dict): Параметры запроса
         """
-        query = text(load_file("search_service/db/relational_db/queries/fetch_requests.sql"))
+        query = text(load_file("search_service/db/relational_db/queries/test.sql"))
         self.requests.extend(await self.make_request(query, params))
         log.info(f"Data received from relational db, count rows - {len(self.requests)}")
 

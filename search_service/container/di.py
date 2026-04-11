@@ -1,5 +1,3 @@
-# services/di.py
-
 import asyncio
 import logging
 
@@ -27,10 +25,6 @@ class Container:
             cfg.model["timeouts"]["timeout_embed"]
         )
 
-        self.summarization_orchestrator = SummarizationOrchestrator(
-            self.model_client
-        )
-
         log.info("Init relational db client")
         self.relational_db = RelationalDatabaseTouch(
             cfg.database["relational_db"]["url"]
@@ -41,20 +35,38 @@ class Container:
             url=cfg.database["vector_db"]["url"]
         )
 
+        self.summarization_orchestrator = SummarizationOrchestrator(
+            self.model_client
+        )
+
     @classmethod
     async def create(cls) -> "Container":
-        """Асинхронная фабрика для инициализации класса"""
+        """
+        Асинхронная фабрика для инициализации класса
+        (НЕ хранит global state, полностью stateless)
+        """
         self = cls()
 
-        await self._build_collections()
+        # Асинхронная инициализация (I/O operations)
+        await self._init_async()
 
         return self
 
-    async def _build_collections(self):
-
-        """Асинхронная инициализация коллекций"""
+    async def _init_async(self):
+        """
+        Асинхронная инициализация внешних ресурсов
+        """
 
         log.info("Initializing vector DB collections")
+
+        await self._build_collections()
+
+        log.info("Vector DB initialization completed")
+
+    async def _build_collections(self):
+        """
+        Асинхронная инициализация коллекций
+        """
 
         tasks = [
             self.vector_db.make_collection(
@@ -67,19 +79,3 @@ class Container:
         ]
 
         await asyncio.gather(*tasks)
-
-        log.info("Collections initialized")
-
-
-container: Container | None = None
-
-
-async def init_container() -> Container:
-    """Инициализация di-контейнера"""
-    global container
-
-    if container is None:
-        log.info("Creating DI container")
-        container = await Container.create()
-
-    return container

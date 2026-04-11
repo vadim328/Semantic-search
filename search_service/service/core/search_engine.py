@@ -13,7 +13,7 @@ import logging
 
 
 log = logging.getLogger(__name__)
-cfg = Config().data["service"]["searcher"]
+cfg = Config().data["service"]
 
 
 class SemanticSearchEngine:
@@ -21,9 +21,11 @@ class SemanticSearchEngine:
     def __init__(self, container):
         self.container = container
         self.scorer = HybridScorer()
-        self.threshold = cfg["threshold"]
+        self.threshold = cfg["searcher"]["threshold"]
 
         self.SEARCH_MODES = SearchMode.get_vector_names
+
+        self.products = cfg["products"]
 
     async def generate_result(self, calc_result: list[dict]) -> List[Dict]:
         """
@@ -199,3 +201,11 @@ class SemanticSearchEngine:
         res = self.container.vector_db.collection(product).metadata()
         log.debug(f"Metadata {res}")
         return res
+
+    def get_products(self) -> List:
+        """
+        Отдает список продуктов
+        Returns:
+            List: Список продуктов
+        """
+        return self.products

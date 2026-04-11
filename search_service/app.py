@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
 import asyncio
 
-from search_service.service.core.search_engine import SemanticSearchEngine
 from search_service.service.core.updater import DataUpdater
-from search_service.container.di import init_container
-from search_service.api.routes import register_routes
+from search_service.container.di import Container
+from search_service.api.routes.summarize import router as search
+from search_service.api.routes.search import router as summarize
+from search_service.api.routes.health import router as health
 from search_service.infrastructure.logging.config import setup_logging
 from search_service.config import Config
 
@@ -15,7 +17,39 @@ import logging
 setup_logging()
 log = logging.getLogger(__name__)
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    Config()
+
+    container = await Container.create()
+    app.state.container = container        # type: ignore
+
+    updater = DataUpdater(container)
+
+    # сервис НЕ готов
+    app.state.ready = False                # type: ignore
+    log.info("System initializing...")
+
+    await asyncio.sleep(10)
+
+    try:
+        await updater.run()
+    except Exception:
+        log.exception("Fatal startup error in updater")
+        raise RuntimeError("Application startup failed")
+
+    app.state.ready = True                 # type: ignore
+    log.info("System is READY")
+
+    asyncio.create_task(updater.background_updater())
+
+    yield
+
+    log.info("Shutting down application...")
+
+app = FastAPI(lifespan=lifespan)
 
 # Подключаем CORS
 app.add_middleware(
@@ -26,49 +60,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(health)
+app.include_router(search)
+app.include_router(summarize)
 
-@app.on_event("startup")
-async def startup_event():
-    """
-    Первичный запуск приложения:
-        - создаёт контейнер
-        - передаёт его searcher и updater
-        - запускает updater
-        - подключает маршруты
-        - поднимает web-интерфейс
-    """
-
-    Config()  # Считываем файл на старте
-
-    # создаём контейнер
-    container = await init_container()
-
-    searcher = SemanticSearchEngine(container)
-    updater = DataUpdater(container)
-
-    log.info("Launching app delayed by 10 seconds. Wait for required services raised")
-    await asyncio.sleep(10)  # Отложенный запус, дожидаемся пока поднимутся нужные сервисы
-
-    try:
-        await updater.run()  # Ждем завершения проверки/получения данных
-    except Exception:
-        # Если не удалось выполнить инициализацию/получение данных, завершаемся
-        log.exception("Fatal: updater initial run failed. Shutting down application.")
-        raise SystemExit(1)
-
-    # Запускаем фоновое обновление
-    asyncio.create_task(updater.background_updater())
-
-    routers = register_routes(
-        searcher=searcher,
-        container=container
-    )
-    for router in routers:
-        log.info(f"Include api router - prefix={router.prefix}")
-        app.include_router(router)
-
-    # Статика фронтенда
-    app.mount("/", StaticFiles(directory="search_service/frontend", html=True), name="frontend")
+app.mount(
+    "/",
+    StaticFiles(directory="search_service/frontend", html=True),
+    name="frontend"
+)
 
 
 @app.on_event("shutdown")
@@ -82,8 +82,3 @@ async def shutdown_event():
     if container and hasattr(container, "model_client"):
         await container.model_client.close()
         log.info("ModelServiceClient correct closed")
-
-
-@app.get("/Health")
-async def root():
-    return {"Status": "OK"}
