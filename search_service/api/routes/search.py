@@ -20,18 +20,27 @@ def get_products(
         searcher: SemanticSearchEngine = Depends(get_searcher)
 ) -> List:
     """
-        GET - метод для получения списка проудктов
+    GET - метод для получения списка проудктов
+    Args:
+        searcher (SemanticSearchEngine): объект класса поиска.
+    Returns
+        List: Список продуктов
     """
     return searcher.get_products()
 
 
 @router.get("/options/metadata")
 def get_metadata(
-        product,
+        product: str,
         searcher: SemanticSearchEngine = Depends(get_searcher)
 ) -> Dict:
     """
-        GET - метод для получения метаданных
+    GET - метод для получения метаданных коллекции по продукту
+    Args:
+        product (str): Название продукта
+        searcher (SemanticSearchEngine): объект класса поиска.
+    Returns
+        Dict: Метаданные запрашиваемой коллекции
     """
     return searcher.get_metadata(product)
 

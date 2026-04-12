@@ -9,3 +9,4 @@ config.yaml
 *test.sql
 onnx/
 train_model/
+model_service/service/inference/embedding_chunk.py
