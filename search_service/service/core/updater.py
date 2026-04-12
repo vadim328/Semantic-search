@@ -23,14 +23,6 @@ class DataUpdater:
         self.max_concurrent = cfg["max_concurrent"]
         self.time_window = cfg["time_window"] * 86_400
 
-        # Берем последнюю запись среди всех коллекций
-        self.date_from = datetime.fromtimestamp(
-            max(
-                collection.metadata()["date_last_record"]
-                for collection in self.container.vector_db.collections().values()
-            )
-        )
-
     async def run(self):
         # Первый запуск — сразу
         try:
@@ -201,7 +193,15 @@ class DataUpdater:
     async def update(self):
         """Получение, обработка и сохранение данных в векторной БД"""
 
-        date_intervals = self._build_intervals(self.date_from)
+        # Берем дату последней записи в коллекциях
+        date_from = datetime.fromtimestamp(
+            max(
+                collection.metadata()["date_last_record"]
+                for collection in self.container.vector_db.collections().values()
+            )
+        )
+
+        date_intervals = self._build_intervals(date_from)
 
         for interval in date_intervals:
             await self._process_interval(interval)
