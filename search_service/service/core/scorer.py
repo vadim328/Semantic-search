@@ -34,7 +34,7 @@ class HybridScorer:
 
         cosine_scores = np.array([h["score"] for h in hits.values()])
 
-        log.info(f"cosine_scores - {cosine_scores}")
+        log.debug(f"cosine_scores - {cosine_scores}")
 
         # Получаем текст проблемы в зависимости от режима поиска
         tokenized_docs = [
